@@ -1,0 +1,16 @@
+# Parte Comum (EDA + K-Means) — testado com Python 3.12
+pandas>=2.2
+numpy>=1.26
+scipy>=1.11
+scikit-learn>=1.4
+matplotlib>=3.8
+seaborn>=0.13
+# Notebooks
+ipykernel>=6.29
+nbconvert>=7.16
+nbclient>=0.10
+# Geração do relatorio.pdf
+reportlab>=4.0
+pillow>=10.0
+# Parte Específica (dashboard) — descomentar quando for implementada
+# streamlit>=1.40

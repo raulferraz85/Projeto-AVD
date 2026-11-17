@@ -1,0 +1,22 @@
+{
+  "linhas": 6497,
+  "colunas": 13,
+  "nulos_total": 0,
+  "duplicatas": 1177,
+  "duplicatas_pct": 18.12,
+  "n_classes": 7,
+  "classes": [
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+  ],
+  "free_so2_maior_que_total": 0,
+  "por_tipo": {
+    "branco": 4898,
+    "tinto": 1599
+  }
+}

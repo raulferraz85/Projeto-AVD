@@ -1,0 +1,44 @@
+{
+  "d_medio_vizinhas_todos": {
+    "3 vs 4": 0.254,
+    "4 vs 5": 0.269,
+    "5 vs 6": 0.224,
+    "6 vs 7": 0.208,
+    "7 vs 8": 0.161
+  },
+  "d_maximo_vizinhas_todos": {
+    "3 vs 4": 0.682,
+    "4 vs 5": 0.516,
+    "5 vs 6": 0.747,
+    "6 vs 7": 0.696,
+    "7 vs 8": 0.269
+  },
+  "agrupadas_k2": {
+    "acuracia_global": 0.45913498537786673,
+    "precisao_macro": 0.31053691440737957,
+    "recall_macro": 0.36814916399251557,
+    "f1_macro": 0.32067194923716597,
+    "classes_nunca_previstas": [
+      3
+    ],
+    "silhouette": 0.2773918845751094,
+    "ARI": 0.0015863234670607303,
+    "NMI": 0.012876035113390973,
+    "homogeneidade": 0.009905952764260558,
+    "baseline": 0.43650915807295676
+  },
+  "agrupadas_k3": {
+    "acuracia_global": 0.4631368323841773,
+    "precisao_macro": 0.3084143974803419,
+    "recall_macro": 0.3901692997983737,
+    "f1_macro": 0.34234027080133234,
+    "classes_nunca_previstas": [
+      3
+    ],
+    "silhouette": 0.23705829252843377,
+    "ARI": 0.022877743636718028,
+    "NMI": 0.03862033327057605,
+    "homogeneidade": 0.0388233427852869,
+    "baseline": 0.43650915807295676
+  }
+}

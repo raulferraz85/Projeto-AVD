@@ -1,0 +1,62 @@
+{
+  "passada1": {
+    "k": 4,
+    "inercia": 40721.014236591385,
+    "mapa_cluster_para_classe": {
+      "0": 5,
+      "1": 6,
+      "2": 6,
+      "3": 6
+    },
+    "acuracia_global": 0.4575958134523626,
+    "precisao_macro": 0.1356895699456253,
+    "recall_macro": 0.1580302281787001,
+    "f1_macro": 0.130460775052726,
+    "classes_nunca_previstas": [
+      3,
+      4,
+      7,
+      8,
+      9
+    ],
+    "silhouette": 0.24914790490607142,
+    "ARI": 0.02202703281073051,
+    "NMI": 0.044759765582307424,
+    "homogeneidade": 0.04423877870335723,
+    "baseline_classe_majoritaria": 0.43650915807295676
+  },
+  "passada2": {
+    "k": 7,
+    "inercia": 34024.977866690075,
+    "mapa_cluster_para_classe": {
+      "0": 6,
+      "1": 5,
+      "2": 6,
+      "3": 5,
+      "4": 6,
+      "5": 5,
+      "6": 6
+    },
+    "acuracia_global": 0.4585193166076651,
+    "precisao_macro": 0.1316048736517103,
+    "recall_macro": 0.16884105147030967,
+    "f1_macro": 0.14743878044459185,
+    "classes_nunca_previstas": [
+      3,
+      4,
+      7,
+      8,
+      9
+    ],
+    "silhouette": 0.1821165322903041,
+    "ARI": 0.03527650873619265,
+    "NMI": 0.06272317565674569,
+    "homogeneidade": 0.07529319376858108,
+    "baseline_classe_majoritaria": 0.43650915807295676
+  },
+  "k_cotovelo": 4,
+  "sem_padronizar": {
+    "ARI": 0.0023967369928651573,
+    "NMI": 0.0166748824094801
+  }
+}
