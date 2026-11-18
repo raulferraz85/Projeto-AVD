@@ -1,0 +1,56 @@
+# Tema do dashboard — mesmo sistema visual de src/parte_especifica/estilo.py
+# [IA] Claude Code – tradução da paleta/tipografia do grupo para o tema do Streamlit
+# O usuário alterna claro/escuro no menu ⋮ → Settings.
+
+[theme]
+font = "Geist:https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&display=swap"
+headingFont = "Bricolage Grotesque:https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,800&display=swap"
+codeFont = "Geist Mono:https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&display=swap"
+headingFontWeights = 800
+baseRadius = "0.6rem"
+buttonRadius = "0.6rem"
+showWidgetBorder = true
+showSidebarBorder = true
+linkUnderline = false
+
+[theme.light]
+backgroundColor = "#EFEEEA"
+secondaryBackgroundColor = "#F8F7F4"
+textColor = "#16171C"
+primaryColor = "#3047E6"
+linkColor = "#2236C9"
+borderColor = "#DCDAD4"
+dataframeBorderColor = "#DCDAD4"
+dataframeHeaderBackgroundColor = "#F8F7F4"
+codeBackgroundColor = "#F8F7F4"
+blueColor = "#3047E6"
+greenColor = "#0E9483"
+orangeColor = "#D2602F"
+grayColor = "#5E5F66"
+chartCategoricalColors = ["#3047E6", "#D2602F", "#0E9483", "#A97A00", "#B83A7A", "#7A8A12"]
+chartSequentialColors = ["#E1E4FB", "#BBC3F7", "#99A5F2", "#8290F0", "#6C7CED", "#5569E9", "#4358E7", "#334AE6", "#2A3FD9", "#2236C9"]
+
+[theme.light.sidebar]
+backgroundColor = "#F8F7F4"
+secondaryBackgroundColor = "#EFEEEA"
+
+[theme.dark]
+backgroundColor = "#111216"
+secondaryBackgroundColor = "#1A1B21"
+textColor = "#ECEBE6"
+primaryColor = "#7D8FFF"
+linkColor = "#8C9BFF"
+borderColor = "#2A2C34"
+dataframeBorderColor = "#2A2C34"
+dataframeHeaderBackgroundColor = "#1A1B21"
+codeBackgroundColor = "#1A1B21"
+blueColor = "#7D8FFF"
+greenColor = "#1FA593"
+orangeColor = "#D96A36"
+grayColor = "#9496A0"
+chartCategoricalColors = ["#6B7FFF", "#D96A36", "#1FA593", "#B48C14", "#D25A95", "#7F9122"]
+chartSequentialColors = ["#1F2350", "#2B3477", "#38469E", "#4353BB", "#4D60D4", "#5C6FE7", "#6F81F5", "#8394FF", "#9CAAFF", "#B5C0FF"]
+
+[theme.dark.sidebar]
+backgroundColor = "#1A1B21"
+secondaryBackgroundColor = "#111216"
