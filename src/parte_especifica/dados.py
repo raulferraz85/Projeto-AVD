@@ -13,6 +13,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 RAIZ = Path(__file__).resolve().parents[2]
@@ -80,6 +81,94 @@ def _diretor(texto_json: str) -> str | None:
         if pessoa.get("job") == "Director":
             return pessoa["name"]
     return None
+
+
+# ------------------------------------------------------------------------------------------
+# Tratamento — as escolhas ficam em DECISOES (justificativas no eda.ipynb, seções 2 e 3).
+# Todo mundo usa:  df = tratar(carregar_filmes())
+# ------------------------------------------------------------------------------------------
+# [IA] Claude Code – estrutura parametrizada do tratamento
+DECISOES = {
+    # budget/revenue == 0 significam "não informado".
+    #   "nan"    -> vira NaN (linha fica no dataset; só sai das contas que usam a coluna)
+    #   "manter" -> deixa o 0
+    "zeros_financeiros": "nan",
+    # budget/revenue positivos mas abaixo deste valor (US$) são tratados como erro -> NaN.
+    #   None -> não mexe.  Ex.: 1000
+    "limite_implausivel": 1000,
+    # runtime == 0  ->  "nan" | "manter"
+    "runtime_zero": "nan",
+    # vote_count == 0: a nota 0 não é uma avaliação real.
+    #   "nan"    -> vote_average vira NaN nesses filmes
+    #   "manter" -> deixa a nota 0
+    "sem_votos": "nan",
+    # colunas descartadas da análise (ex.: ["homepage", "tagline"]). Lista vazia = não descarta nada.
+    "remover_colunas": ["homepage"],
+    # filmes com status != "Released" (Rumored / Post Production) ficam sem retorno calculado
+    "retorno_so_lancados": True,
+    # remove as linhas sem release_date (necessária para ano/decada)
+    "remover_sem_data": True,
+}
+
+
+def tratar(df: pd.DataFrame, decisoes: dict | None = None, verbose: bool = False) -> pd.DataFrame:
+    """Aplica o tratamento de dados definido em DECISOES (ou no dict `decisoes`, para testar alternativas).
+
+    Só remove linhas se remover_sem_data=True; nos demais casos valores inválidos viram NaN
+    e flags indicam o que estava faltando.
+    Cria também as colunas derivadas usadas na pergunta de pesquisa:
+      - orcamento_informado, receita_informada (bool)
+      - retorno = revenue / budget (NaN se um dos dois não for válido)
+    Gêneros: cada filme conta em TODOS os seus gêneros (decisão do EDA, seção 1.2).
+    Para analisar por gênero use explodir(df, "genres").
+    """
+    d = {**DECISOES, **(decisoes or {})}
+    out = df.copy()
+    log = {}
+
+    if d.get("remover_sem_data"):
+        sem_data = out["release_date"].isna()
+        log["linhas sem data removidas"] = int(sem_data.sum())
+        out = out[~sem_data].reset_index(drop=True)
+
+    for col in ["budget", "revenue"]:
+        out[col] = out[col].astype(float)
+        invalido = pd.Series(False, index=out.index)
+        if d["zeros_financeiros"] == "nan":
+            invalido |= out[col] == 0
+        if d["limite_implausivel"] is not None:
+            invalido |= (out[col] > 0) & (out[col] < d["limite_implausivel"])
+        log[f"{col} -> NaN"] = int(invalido.sum())
+        out.loc[invalido, col] = np.nan
+
+    if d["runtime_zero"] == "nan":
+        z = out["runtime"] == 0
+        log["runtime 0 -> NaN"] = int(z.sum())
+        out.loc[z, "runtime"] = np.nan
+
+    if d["sem_votos"] == "nan":
+        z = out["vote_count"] == 0
+        log["vote_average sem votos -> NaN"] = int(z.sum())
+        out.loc[z, "vote_average"] = np.nan
+
+    if d["remover_colunas"]:
+        out = out.drop(columns=d["remover_colunas"])
+        log["colunas removidas"] = list(d["remover_colunas"])
+
+    out["orcamento_informado"] = out["budget"].notna() & (out["budget"] > 0)
+    out["receita_informada"] = out["revenue"].notna() & (out["revenue"] > 0)
+    validos = out["orcamento_informado"] & out["receita_informada"]
+    if d.get("retorno_so_lancados"):
+        nao_lancado = validos & (out["status"] != "Released")
+        log["não lançados fora do retorno"] = int(nao_lancado.sum())
+        validos &= ~nao_lancado
+    out["retorno"] = np.where(validos, out["revenue"] / out["budget"], np.nan)
+    log["filmes com retorno calculável"] = int(validos.sum())
+
+    if verbose:
+        for k, v in log.items():
+            print(f"{k:32s} {v}")
+    return out
 
 
 def explodir(df: pd.DataFrame, coluna: str) -> pd.DataFrame:
