@@ -13,6 +13,8 @@ python src/parte_comum/granularidade.py  # apoio à discussão crítica -> out/p
 python src/parte_comum/relatorio.py      # gera relatorio.pdf a partir de out/
 ```
 
+Só usamos as bibliotecas permitidas pelo enunciado (pandas, numpy, matplotlib, seaborn, plotly, scikit-learn, streamlit).
+
 Os notebooks em `notebooks/parte_comum/` (`eda.ipynb`, `kmeans_metricas.ipynb`) reutilizam as funções de
 `src/parte_comum/` e já estão executados. Semente fixa (42), `n_init = 20`: resultados determinísticos.
 
@@ -21,7 +23,7 @@ Os notebooks em `notebooks/parte_comum/` (`eda.ipynb`, `kmeans_metricas.ipynb`) 
 | Caminho | Conteúdo |
 |---|---|
 | `data/parte_comum/` | CSVs originais do UCI (`winequality-red/white.csv`, `.names`) |
-| `src/parte_comum/` | `common.py` (carga/estilo), `eda.py`, `kmeans.py`, `metricas.py`, `granularidade.py`, `relatorio.py` |
+| `src/parte_comum/` | `common.py` (carga/estilo), `eda.py`, `kmeans.py`, `metricas.py`, `granularidade.py`, `relatorio.py`, `estatistica.py` (testes de normalidade e Kruskal-Wallis sem scipy), `pdf_simples.py` (gerador de PDF só com matplotlib) |
 | `notebooks/parte_comum/` | `eda.ipynb`, `kmeans_metricas.ipynb` |
 | `out/parte_comum/` | figuras e tabelas (CSV/JSON) geradas |
 | `relatorio.pdf` | relatório (Parte Comum completa; Parte Específica como marcador) |

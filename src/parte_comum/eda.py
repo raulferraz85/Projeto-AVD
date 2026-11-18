@@ -11,8 +11,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from scipy import stats
 
+import estatistica as stats  # substitui scipy.stats (só normaltest e kruskal)
 from common import FEATURES, TARGET, TIPO, carregar_dados, estilo_graficos, pasta_saida, salvar
 
 # ----------------------------------------------------------------------------------------
@@ -56,7 +56,7 @@ def distribucional(df: pd.DataFrame) -> dict:
     desc["assimetria"] = df[FEATURES].skew()
     desc["curtose"] = df[FEATURES].kurt()
     # Shapiro-Wilk perde sentido com n grande (rejeita tudo); D'Agostino-Pearson é mais estável
-    desc["p_normalidade"] = [stats.normaltest(df[c]).pvalue for c in FEATURES]
+    desc["p_normalidade"] = [stats.normaltest(df[c])[1] for c in FEATURES]
     freq = df[TARGET].value_counts().sort_index()
     dist_classes = pd.DataFrame({"n": freq, "pct": (100 * freq / freq.sum()).round(2)})
     por_tipo = pd.crosstab(df[TARGET], df[TIPO])

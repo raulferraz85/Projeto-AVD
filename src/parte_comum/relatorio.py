@@ -6,41 +6,36 @@ A seção da Parte Específica fica como marcador para o grupo preencher.
 from __future__ import annotations
 
 import json
-from pathlib import Path
 
-import matplotlib
 import pandas as pd
-from reportlab.lib import colors
-from reportlab.lib.enums import TA_JUSTIFY
-from reportlab.lib.pagesizes import A4
-from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
-from reportlab.lib.units import cm
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.platypus import Image, KeepTogether, PageBreak, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 from common import OUT_DIR, RAIZ
+from pdf_simples import DocumentoPDF, Espaco, Estilo, Imagem, Paragrafo, QuebraPagina, Tabela
 
-# DejaVu (vem com o matplotlib) cobre acentos e símbolos como →, ≤, ρ, ₂
-fontes = Path(matplotlib.get_data_path()) / "fonts" / "ttf"
-pdfmetrics.registerFont(TTFont("DV", str(fontes / "DejaVuSans.ttf")))
-pdfmetrics.registerFont(TTFont("DV-B", str(fontes / "DejaVuSans-Bold.ttf")))
-pdfmetrics.registerFontFamily("DV", normal="DV", bold="DV-B", italic="DV", boldItalic="DV-B")
+# [IA] Claude Code – troca do reportlab/PIL pelo gerador em pdf_simples.py (só matplotlib)
+cm = 1  # larguras passadas em centímetros
 
-ss = getSampleStyleSheet()
-CORPO = ParagraphStyle("corpo", parent=ss["BodyText"], fontName="DV", fontSize=9.2, leading=13.2, alignment=TA_JUSTIFY, spaceAfter=5)
-H1 = ParagraphStyle("h1", parent=ss["Heading1"], fontName="DV-B", fontSize=15, spaceBefore=10, spaceAfter=6, keepWithNext=1)
-H2 = ParagraphStyle("h2", parent=ss["Heading2"], fontName="DV-B", fontSize=11.5, spaceBefore=8, spaceAfter=4, keepWithNext=1)
-CK = ParagraphStyle("ck", parent=CORPO, keepWithNext=1)
-LEG = ParagraphStyle("leg", parent=CORPO, fontSize=8, leading=10, textColor=colors.HexColor("#444444"), alignment=0)
-TIT = ParagraphStyle("tit", parent=H1, fontSize=21, leading=26, spaceBefore=90, alignment=1)
-SUB = ParagraphStyle("sub", parent=CORPO, fontSize=11, alignment=1)
+CORPO = Estilo(tamanho=9.2, entrelinha=13.2, alinhamento="justify", depois=5)
+H1 = Estilo(tamanho=15, entrelinha=18, negrito=True, alinhamento="left", antes=10, depois=6, junto_proximo=True)
+H2 = Estilo(tamanho=11.5, entrelinha=14, negrito=True, alinhamento="left", antes=8, depois=4, junto_proximo=True)
+CK = CORPO.com(junto_proximo=True)
+LEG = Estilo(tamanho=8, entrelinha=10, cor="#444444", alinhamento="left", depois=5)
+TIT = Estilo(tamanho=21, entrelinha=26, negrito=True, alinhamento="center", depois=6)
+SUB = CORPO.com(tamanho=11, entrelinha=14.5, alinhamento="center")
 
 E, K, G = OUT_DIR / "eda", OUT_DIR / "kmeans", OUT_DIR / "granularidade"
 
 
 def P(t, s=CORPO):
-    return Paragraph(t, s)
+    return Paragrafo(t, s)
+
+
+def Spacer(_largura, altura):
+    return Espaco(altura)
+
+
+def PageBreak():
+    return QuebraPagina()
 
 
 def bullets(itens):
@@ -48,13 +43,7 @@ def bullets(itens):
 
 
 def img(caminho, largura=16.5, legenda=None):
-    from PIL import Image as PI
-
-    w, h = PI.open(caminho).size
-    el = [Image(str(caminho), width=largura * cm, height=largura * cm * h / w)]
-    if legenda:
-        el.append(P(legenda, LEG))
-    return KeepTogether(el + [Spacer(1, 6)])
+    return Imagem(caminho, largura, legenda, LEG)
 
 
 def tabela(df: pd.DataFrame, fmt="{:.3f}", col0=True, tam=7.6, largura=None):
@@ -62,14 +51,7 @@ def tabela(df: pd.DataFrame, fmt="{:.3f}", col0=True, tam=7.6, largura=None):
     linhas = [[str(c) for c in d.columns]]
     for _, r in d.iterrows():
         linhas.append([("—" if pd.isna(v) else (fmt.format(v) if isinstance(v, float) else str(v))) for v in r])
-    t = Table(linhas, colWidths=largura, repeatRows=1)
-    t.setStyle(TableStyle([
-        ("FONTNAME", (0, 0), (-1, -1), "DV"), ("FONTNAME", (0, 0), (-1, 0), "DV-B"), ("FONTSIZE", (0, 0), (-1, -1), tam),
-        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#DDE4F0")), ("GRID", (0, 0), (-1, -1), 0.3, colors.grey),
-        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#F6F7FA")]), ("ALIGN", (1, 0), (-1, -1), "CENTER"),
-        ("TOPPADDING", (0, 0), (-1, -1), 2), ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
-    ]))
-    return KeepTogether([t, Spacer(1, 8)])
+    return Tabela(linhas, tam, largura)
 
 
 def csv(caminho, **kw):
@@ -86,7 +68,7 @@ def montar() -> list:
     s = []
 
     # ---------------------------------------------------------------- capa
-    s += [P("Análise Exploratória e Agrupamento (K-Means)<br/>sobre o Wine Quality", TIT),
+    s += [Spacer(1, 90), P("Análise Exploratória e Agrupamento (K-Means)<br/>sobre o Wine Quality", TIT),
           P("Parte Comum — Análise e Visualização de Dados (AVD)", SUB), Spacer(1, 14),
           P("Dataset: UCI Wine Quality (vinho tinto + branco, <i>Vinho Verde</i>) — archive.ics.uci.edu/dataset/186", SUB),
           P("Integrantes: <i>[preencher nomes do grupo]</i>", SUB), Spacer(1, 40),
@@ -249,21 +231,15 @@ def montar() -> list:
           P("8. Uso de IA e referências", H1),
           P("O uso de ferramentas de IA generativa neste trabalho está declarado em docs/DECLARACAO_IA.pdf (assinada pelos integrantes). "
             "Dados: P. Cortez, A. Cerdeira, F. Almeida, T. Matos, J. Reis. <i>Modeling wine preferences by data mining from physicochemical properties.</i> Decision Support Systems, 47(4):547–553, 2009. "
-            "Software: Python 3, pandas, NumPy, SciPy, scikit-learn, seaborn, matplotlib.")]
+            "Software: Python 3, pandas, NumPy, scikit-learn, seaborn, matplotlib.")]
     return s
 
 
 def main() -> None:
     destino = RAIZ / "relatorio.pdf"
-
-    def rodape(c, d):
-        c.saveState(); c.setFont("DV", 7.5); c.setFillColor(colors.grey)
-        c.drawCentredString(A4[0] / 2, 1.1 * cm, f"AVD — Wine Quality (Parte Comum) · página {d.page}")
-        c.restoreState()
-
-    doc = SimpleDocTemplate(str(destino), pagesize=A4, leftMargin=2 * cm, rightMargin=2 * cm, topMargin=1.8 * cm, bottomMargin=1.8 * cm,
-                            title="Relatório AVD — Wine Quality (Parte Comum)")
-    doc.build(montar(), onFirstPage=rodape, onLaterPages=rodape)
+    doc = DocumentoPDF(destino, titulo="Relatório AVD — Wine Quality (Parte Comum)",
+                       rodape="AVD — Wine Quality (Parte Comum)")
+    doc.construir(montar())
     print("Relatório gerado:", destino)
 
 

@@ -1,16 +1,13 @@
-# Parte Comum (EDA + K-Means) — testado com Python 3.12
+# Python 3.11+ (testado com 3.12)
+# Só bibliotecas permitidas pelo enunciado: pandas, numpy, matplotlib, seaborn, plotly, scikit-learn, streamlit
 pandas>=2.2
 numpy>=1.26
-scipy>=1.11
-scikit-learn>=1.4
 matplotlib>=3.8
 seaborn>=0.13
-# Notebooks
+plotly>=5.20
+scikit-learn>=1.4
+streamlit>=1.40
+# Para abrir/executar os notebooks Jupyter da Parte Comum
 ipykernel>=6.29
 nbconvert>=7.16
 nbclient>=0.10
-# Geração do relatorio.pdf
-reportlab>=4.0
-pillow>=10.0
-# Parte Específica (dashboard) — descomentar quando for implementada
-# streamlit>=1.40
