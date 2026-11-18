@@ -333,7 +333,7 @@ def sincronizar_tema() -> None:
         <script>
         const pai = window.parent;
         const desenhado = "{modo}";
-        let ultimo = 0;
+        let ultimo = 0, tentativas = 0;
         function luminancia(cor) {{
             const m = (cor.match(/\\d+(\\.\\d+)?/g) || [255, 255, 255]).map(Number);
             return 0.299 * m[0] + 0.587 * m[1] + 0.114 * m[2];
@@ -342,12 +342,20 @@ def sincronizar_tema() -> None:
             const app = pai.document.querySelector(".stApp");
             if (!app) return;
             const naTela = luminancia(pai.getComputedStyle(app).backgroundColor) < 128 ? "escuro" : "claro";
-            if (naTela === desenhado || Date.now() - ultimo < 2500) return;
+            if (naTela === desenhado) {{ tentativas = 0; return; }}
+            if (Date.now() - ultimo < 1500) return;
             ultimo = Date.now();
+            tentativas += 1;
             const url = new URL(pai.location.href);
             url.searchParams.set("tema", naTela);
-            pai.history.replaceState(null, "", url);
-            pai.document.dispatchEvent(new KeyboardEvent("keydown", {{key: "r", code: "KeyR", keyCode: 82, which: 82, bubbles: true}}));
+            if (tentativas === 1) {{
+                // 1ª tentativa: rerun normal (mantém filtros); pode ser ignorado com a janela de Settings aberta
+                pai.history.replaceState(null, "", url);
+                pai.document.dispatchEvent(new KeyboardEvent("keydown", {{key: "r", code: "KeyR", keyCode: 82, which: 82, bubbles: true}}));
+            }} else {{
+                // não adiantou: recarrega a página inteira (sempre funciona)
+                pai.location.replace(url.toString());
+            }}
         }}
         setInterval(verificar, 400);
         </script>
