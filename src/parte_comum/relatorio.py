@@ -1,7 +1,7 @@
 """Gera relatorio.pdf (Parte Comum) a partir das tabelas/figuras já salvas em out/parte_comum/.
 
 Uso (depois de rodar eda.py, kmeans.py e granularidade.py):  python src/parte_comum/relatorio.py
-A seção da Parte Específica fica como marcador para o grupo preencher.
+A seção 7 inclui a resposta à pergunta de pesquisa da Parte Específica.
 """
 from __future__ import annotations
 
@@ -226,8 +226,15 @@ def montar() -> list:
           P("* Cenário principal. A winsorização a 1%–99% e a separação por tipo de vinho não alteram a conclusão central (acurácia ≈ baseline; ARI &lt; 0,07). "
             "Limitações: resultados dependem da inicialização (usamos n_init = 20 e semente fixa); o K-Means pressupõe grupos esféricos de variância parecida; "
             "o mapeamento por maioria pode associar vários clusters à mesma classe e deixar outras sem representante."),
-          P("7. Parte Específica", H1),
-          P("<i>[A ser preenchida pelo grupo: dataset próprio, EDA, dashboard Streamlit — ver src/parte_especifica/.]</i>"),
+          PageBreak(),
+          P("7. Parte Específica: TMDB 5000", H1),
+          P("7.1 Resposta à pergunta de pesquisa", H2),
+          P("<b>Filmes com orçamento maior têm retorno maior, ou isso varia por gênero?</b>"),
+          P("Na amostra analisada, orçamentos maiores nem sempre vieram acompanhados de retornos proporcionais maiores. "
+            "O gráfico exploratório mostra filmes com orçamentos parecidos e retornos bastante diferentes. No gráfico "
+            "explanatório, aventura teve seu maior retorno mediano na menor faixa de orçamento, enquanto comédia "
+            "apresentou resultados mais equilibrados entre as faixas. O padrão variou conforme o gênero e a faixa de orçamento."),
+          P("Uma limitação é que a medida de retorno se restringe à razão entre receita e orçamento."),
           P("8. Uso de IA e referências", H1),
           P("O uso de ferramentas de IA generativa neste trabalho está declarado em docs/DECLARACAO_IA.pdf (assinada pelos integrantes). "
             "Dados: P. Cortez, A. Cerdeira, F. Almeida, T. Matos, J. Reis. <i>Modeling wine preferences by data mining from physicochemical properties.</i> Decision Support Systems, 47(4):547–553, 2009. "
