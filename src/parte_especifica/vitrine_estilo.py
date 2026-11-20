@@ -10,7 +10,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 
-from estilo import (CORES, GENEROS_COM_COR, aplicar_estilo, card, cor_resultado, cores_destaque, eixo_log,
+from estilo import (CORES, faixa_orcamento, GENEROS_COM_COR, aplicar_estilo, card, cor_resultado, cores_destaque, eixo_log,
                     grafico, injetar_css, linha_empate, mapa_cores_faixas, mapa_cores_generos, nota, usar_tema)
 
 st.set_page_config(page_title="Vitrine de estilo", layout="wide")
@@ -91,8 +91,7 @@ with g4:
     n = 160
     orc = rng.lognormal(17, 1, n)
     df = pd.DataFrame({"orcamento": orc, "retorno": rng.lognormal(0.6, 1, n)})
-    df["faixa"] = pd.cut(df["orcamento"], [0, 10e6, 40e6, 100e6, np.inf],
-                         labels=list(mapa_cores_faixas(modo)), right=False)
+    df["faixa"] = faixa_orcamento(df["orcamento"])
     fig = px.scatter(df, x="orcamento", y="retorno", color="faixa", color_discrete_map=mapa_cores_faixas(modo),
                      category_orders={"faixa": list(mapa_cores_faixas(modo))}, log_x=True, log_y=True)
     aplicar_estilo(fig, "Faixas de orçamento em degradê", "Categorias ordenadas usam um tom só, do claro ao escuro")

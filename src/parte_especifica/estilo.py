@@ -90,10 +90,11 @@ GENEROS_PT = {
 }
 
 # ------------------------------------------------------------------------------------------
-# 4. Faixas de orçamento (degradê de um tom só; limites são sugestão — o grupo pode mudar)
+# 4. Faixas de orçamento (degradê de um tom só) — as mesmas do gráfico explanatório da Pessoa 2:
+#    até 20M (inclusive), acima de 20 até 50M, acima de 50 até 100M, acima de 100M
 # ------------------------------------------------------------------------------------------
-LIMITES_FAIXAS = [10e6, 40e6, 100e6]  # US$
-ROTULOS_FAIXAS = ["< US$ 10M", "US$ 10–40M", "US$ 40–100M", "US$ 100M+"]
+LIMITES_FAIXAS = [20e6, 50e6, 100e6]  # US$
+ROTULOS_FAIXAS = ["Até US$ 20M", "US$ 20–50M", "US$ 50–100M", "Acima de US$ 100M"]
 
 
 # ==========================================================================================
@@ -128,9 +129,9 @@ def mapa_cores_generos(modo: str = "claro", em_portugues: bool = False) -> dict:
 
 
 def faixa_orcamento(budget: pd.Series) -> pd.Series:
-    """Classifica o orçamento nas faixas (categoria ordenada, de barato a caro)."""
+    """Classifica o orçamento nas faixas (categoria ordenada, de barato a caro; limite superior incluso)."""
     bins = [0, *LIMITES_FAIXAS, np.inf]
-    return pd.cut(budget, bins=bins, labels=ROTULOS_FAIXAS, right=False)
+    return pd.cut(budget, bins=bins, labels=ROTULOS_FAIXAS, right=True)
 
 
 def mapa_cores_faixas(modo: str = "claro") -> dict:
