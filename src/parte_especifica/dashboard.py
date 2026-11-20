@@ -19,7 +19,7 @@ import streamlit as st
 from dados import DECISOES, RAIZ, carregar_filmes, tratar
 from estilo import card, fmt_mult, fmt_pct, fmt_usd, _br, grafico, injetar_css, nota, usar_tema
 from graficos import GRAFICOS
-from notas import NOTAS, STORYTELLING_P3
+from notas import NOTAS, RESPOSTA_PERGUNTA, STORYTELLING_P3
 
 PERGUNTA = "Filmes com orçamento maior têm retorno (receita ÷ orçamento) maior, ou isso varia por gênero?"
 PUBLICO = "Gestor de estúdio ou produtora"
@@ -97,7 +97,8 @@ def pagina_inicio() -> None:
              ajuda="Entre os filmes com retorno calculável.")
 
     st.subheader("Resposta à pergunta")
-    pendente("Texto da resposta à pergunta (Pessoa 2). Entra aqui, com base nos gráficos explanatórios.")
+    with st.container(border=True):
+        st.markdown(RESPOSTA_PERGUNTA.replace("$", "\\$"))  # "$" sozinho vira fórmula no Markdown
 
     st.subheader("Como ler este dashboard")
     st.markdown(

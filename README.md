@@ -124,7 +124,15 @@ Os gráficos ficam no `eda.ipynb`. A versão em plotly, com a identidade visual 
 
 ### Resposta à pergunta
 
-_(pendente — Pessoa 2)_
+**Não de forma simples.** Nos 3 210 filmes com retorno calculável, a correlação de Spearman entre orçamento e retorno
+é fraca e levemente negativa (−0,136). Por faixa de orçamento, a relação forma um “U”: até US$ 20M (mediana de 2,88×)
+e acima de US$ 100M (2,76×) superam as faixas do meio (1,99×). O que mais muda com o orçamento alto é a chance de a
+receita não cobrir o custo: 7,9 % acima de US$ 100M, contra cerca de um em cada quatro filmes nas outras faixas.
+
+**Varia por gênero.** A associação é negativa e fraca em romance, drama, suspense e comédia, e próxima de zero em ação
+e aventura. Retorno não é lucro, e parte da correlação negativa vem de o orçamento estar no denominador do retorno.
+
+Texto completo, com as ressalvas, no fim do `eda.ipynb` e na página Início do dashboard.
 
 ### Storytelling
 
@@ -179,7 +187,8 @@ _(preencher com P = principal, A = apoio)_
 
 - [ ] Nomes dos integrantes (aqui e na capa do relatório)
 - [ ] Gráfico exploratório e nota da Pessoa 4
-- [ ] Resposta à pergunta e storytelling (resumo aqui)
+- [x] Resposta à pergunta (resumo aqui)
+- [ ] Resumo do storytelling aqui
 - [ ] Matriz de contribuição
 - [ ] `docs/DECLARACAO_IA.pdf` assinada por todos
 - [ ] `relatorio.pdf` com a Parte Específica
