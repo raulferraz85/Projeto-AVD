@@ -395,6 +395,10 @@ def injetar_css() -> None:
             color: {c["texto_suave"]}; font-size: 0.92rem; line-height: 1.55;
             border-left: 3px solid {c["linha"]}; padding: 0.25rem 0 0.25rem 0.9rem; margin: 0.25rem 0 1.5rem;
         }}
+        .nota-analitica p, .nota-analitica ul {{ margin: 0 0 0.6rem; }}
+        .nota-analitica p:last-child, .nota-analitica ul:last-child {{ margin-bottom: 0; }}
+        .nota-analitica li {{ margin-bottom: 0.3rem; }}
+        .nota-analitica strong {{ color: {c["texto"]}; }}
         </style>
         """,
         unsafe_allow_html=True,
@@ -429,5 +433,15 @@ def nota(texto: str) -> None:
 
     import streamlit as st
 
-    texto = re.sub(r"`([^`]+)`", r"<code>\1</code>", texto)  # `código` do Markdown dentro do HTML
-    st.markdown(f'<div class="nota-analitica">{texto}</div>', unsafe_allow_html=True)
+    # [IA] Claude Code – Markdown simples (código, negrito, parágrafos, listas) convertido para HTML dentro da caixa
+    texto = re.sub(r"`([^`]+)`", r"<code>\1</code>", texto)
+    texto = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", texto)
+    blocos = []
+    for bloco in re.split(r"\n\s*\n", texto.strip()):
+        linhas = bloco.strip().splitlines()
+        if all(l.lstrip().startswith("- ") for l in linhas):
+            itens = "".join(f"<li>{l.lstrip()[2:].strip()}</li>" for l in linhas)
+            blocos.append(f"<ul>{itens}</ul>")
+        else:
+            blocos.append(f"<p>{' '.join(l.strip() for l in linhas)}</p>")
+    st.markdown(f'<div class="nota-analitica">{"".join(blocos)}</div>', unsafe_allow_html=True)

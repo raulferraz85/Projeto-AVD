@@ -19,7 +19,7 @@ from plotly.subplots import make_subplots
 
 from dados import explodir
 from estilo import (CORES, GENEROS_PT, LIMITES_FAIXAS, ROTULOS_FAIXAS, FONTE_NUMERO, FONTE_TEXTO, _br,
-                    aplicar_estilo, eixo_log, fmt_mult, fmt_usd, mapa_cores_generos, modo_atual)
+                    aplicar_estilo, eixo_log, fmt_mult, fmt_pct, fmt_usd, mapa_cores_generos, modo_atual)
 
 
 def _cor_genero(genero_en: str, modo: str) -> str:
@@ -43,6 +43,60 @@ def _rotulos_titulos_subplot(fig: go.Figure, modo: str, titulo_x: str, titulo_y:
     fig.add_annotation(text=titulo_x, xref="paper", yref="paper", x=0.5, y=0, yshift=-46, showarrow=False, font=fonte)
     fig.add_annotation(text=titulo_y, xref="paper", yref="paper", x=0, y=0.5, xshift=-58, textangle=-90, showarrow=False, font=fonte)
     fig.update_layout(margin=dict(l=76, b=64, t=fig.layout.margin.t + 18))
+
+
+# ==========================================================================================
+# Pessoa 1 — exploratório: cobertura financeira (filmes com retorno calculável) por gênero
+# ==========================================================================================
+MIN_FILMES_GENERO = 30  # corte mínimo de filmes por gênero (decisão da Pessoa 1)
+
+
+def p1_tabela_cobertura(df: pd.DataFrame) -> pd.DataFrame:
+    """Por gênero: nº de filmes e % com orçamento, receita e os dois (= retorno calculável) após tratar().
+
+    Gêneros com menos de MIN_FILMES_GENERO filmes ficam de fora. Ordem: menor cobertura primeiro.
+    """
+    base = df[["id", "genres", "orcamento_informado", "receita_informada", "retorno"]].copy()
+    base["retorno_calculavel"] = base["retorno"].notna()
+    base = explodir(base, "genres").dropna(subset=["genres"]).drop_duplicates(["id", "genres"])
+    tab = base.groupby("genres").agg(
+        filmes=("id", "size"),
+        com_retorno=("retorno_calculavel", "sum"),
+        pct_orcamento=("orcamento_informado", "mean"),
+        pct_receita=("receita_informada", "mean"),
+        pct_retorno=("retorno_calculavel", "mean"),
+    ).reset_index().rename(columns={"genres": "genero"})
+    tab["gênero"] = tab["genero"].map(lambda g: GENEROS_PT.get(g, g))
+    tab = tab.loc[tab["filmes"].ge(MIN_FILMES_GENERO)]
+    return tab.sort_values("pct_retorno").reset_index(drop=True)
+
+
+def p1_exploratorio_cobertura(df: pd.DataFrame, modo: str | None = None) -> go.Figure:
+    modo = modo or modo_atual()
+    c = CORES[modo]
+    tab = p1_tabela_cobertura(df)
+    geral = df["retorno"].notna().mean()
+    fig = go.Figure(go.Bar(
+        x=tab["pct_retorno"], y=tab["gênero"], orientation="h",
+        marker_color=[_cor_genero(g, modo) for g in tab["genero"]],
+        text=[fmt_pct(v, 0) for v in tab["pct_retorno"]], textposition="outside", cliponaxis=False,
+        textfont=dict(family=FONTE_NUMERO, size=11, color=c["texto"]),
+        customdata=np.column_stack([tab["filmes"], tab["com_retorno"], tab["pct_orcamento"], tab["pct_receita"]]),
+        hovertemplate=("<b>%{y}</b><br>filmes no gênero: %{customdata[0]:,.0f}<br>"
+                       "com retorno calculável: %{customdata[1]:,.0f} (%{x:.1%})<br>"
+                       "com orçamento: %{customdata[2]:.1%} · com receita: %{customdata[3]:.1%}<extra></extra>"),
+    ))
+    fig.add_vline(x=geral, line=dict(dash="dash", color=c["texto_suave"], width=1.2))
+    fig.add_annotation(x=geral, y=1, yref="paper", yanchor="bottom", xanchor="left", xshift=4, showarrow=False,
+                       text=f"base toda: {fmt_pct(geral, 0)}", font=dict(family=FONTE_TEXTO, size=11, color=c["texto_suave"]))
+    aplicar_estilo(fig, "Quanto de cada gênero tem orçamento e receita informados",
+                   f"% de filmes com retorno calculável (orçamento e receita válidos) · gêneros com ao menos {MIN_FILMES_GENERO} filmes",
+                   modo=modo, altura=620)
+    fig.update_xaxes(title_text="Filmes com retorno calculável (% do gênero)", range=[0, 1.08], tickformat=".0%",
+                     tickvals=[0, 0.25, 0.5, 0.75, 1], ticktext=["0%", "25%", "50%", "75%", "100%"])
+    fig.update_yaxes(showgrid=False, tickfont=dict(family=FONTE_TEXTO, size=12, color=c["texto"]))
+    fig.update_layout(separators=",.", bargap=0.25)
+    return fig
 
 
 # ==========================================================================================
@@ -209,6 +263,7 @@ def p3_explanatorio_spearman(df: pd.DataFrame, modo: str | None = None) -> go.Fi
 # Catálogo (ordem de exibição no dashboard)
 # ==========================================================================================
 GRAFICOS = [
+    {"id": "p1_exploratorio", "tipo": "exploratório", "autor": "Pessoa 1", "funcao": p1_exploratorio_cobertura},
     {"id": "p2_exploratorio", "tipo": "exploratório", "autor": "Pessoa 2", "funcao": p2_exploratorio_dispersao},
     {"id": "p3_exploratorio", "tipo": "exploratório", "autor": "Pessoa 3", "funcao": p3_exploratorio_densidade},
     {"id": "p2_explanatorio", "tipo": "explanatório", "autor": "Pessoa 2", "funcao": p2_explanatorio_faixas},
