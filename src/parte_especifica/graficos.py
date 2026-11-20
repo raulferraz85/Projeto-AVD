@@ -8,8 +8,13 @@ As notas analíticas de cada gráfico ficam em notas.py.
 Uso no dashboard:
     from graficos import GRAFICOS
     for g in GRAFICOS: grafico(g["funcao"](df)); nota(NOTAS[g["id"]])
+
+Filtros do dashboard: toda função aceita `generos` (None = sem filtro; senão mostra só os gêneros do
+autor que estão no filtro) e `min_filmes` (gêneros com menos filmes que isso no recorte ficam de fora).
+Sem esses argumentos, cada gráfico sai igual ao do eda.ipynb. Se o recorte esvaziar o gráfico: SemDados.
 """
 # [IA] Claude Code – conversão dos gráficos do eda.ipynb para plotly com o estilo do projeto
+# [IA] Claude Code – parâmetros de filtro (generos, min_filmes) para os filtros do dashboard
 from __future__ import annotations
 
 import numpy as np
@@ -22,17 +27,43 @@ from estilo import (CORES, GENEROS_PT, LIMITES_FAIXAS, ROTULOS_FAIXAS, FONTE_NUM
                     aplicar_estilo, eixo_log, fmt_mult, fmt_pct, fmt_usd, mapa_cores_generos, modo_atual)
 
 
+class SemDados(Exception):
+    """O recorte (filtros do dashboard) não deixou nenhum gênero com filmes suficientes para o gráfico."""
+
+
+def _escolher(padrao: list[str], generos) -> list[str]:
+    """Gêneros do autor (na ordem dele) que também estão no filtro; generos=None = sem filtro."""
+    return [g for g in padrao if generos is None or g in generos]
+
+
+def _grade(n: int, max_colunas: int) -> tuple[int, int]:
+    colunas = min(n, max_colunas)
+    return -(-n // colunas), colunas  # (linhas, colunas)
+
+
 def _cor_genero(genero_en: str, modo: str) -> str:
     """Cor fixa do gênero (estilo.py); gêneros fora dos 6 com cor ficam em cinza de contexto."""
     return mapa_cores_generos(modo).get(genero_en, CORES[modo]["contexto"])
 
 
-def _base_genero(df: pd.DataFrame, generos: list[str], so_positivo: bool = False) -> pd.DataFrame:
-    """Uma linha por (filme, gênero) só com filmes de retorno válido e os gêneros pedidos."""
+def _base_genero(df: pd.DataFrame, generos: list[str], so_positivo: bool = False, min_filmes: int = 0) -> pd.DataFrame:
+    """Uma linha por (filme, gênero) só com filmes de retorno válido e os gêneros pedidos.
+
+    Gêneros com menos de `min_filmes` filmes ficam de fora (corte usado pelo filtro do dashboard).
+    """
     filtro = df["retorno"].gt(0) if so_positivo else df["retorno"].notna()
     base = explodir(df.loc[filtro, ["id", "budget", "retorno", "genres"]], "genres").dropna(subset=["genres"])
     base = base.drop_duplicates(["id", "genres"])
-    return base.loc[base["genres"].isin(generos)].copy()
+    base = base.loc[base["genres"].isin(generos)]
+    contagem = base["genres"].value_counts()
+    base = base.loc[base["genres"].map(contagem).ge(min_filmes)].copy()
+    if base.empty:
+        raise SemDados
+    return base
+
+
+def _presentes(base: pd.DataFrame, generos: list[str]) -> list[str]:
+    return [g for g in generos if g in set(base["genres"])]
 
 
 def _rotulos_titulos_subplot(fig: go.Figure, modo: str, titulo_x: str, titulo_y: str) -> None:
@@ -51,10 +82,10 @@ def _rotulos_titulos_subplot(fig: go.Figure, modo: str, titulo_x: str, titulo_y:
 MIN_FILMES_GENERO = 30  # corte mínimo de filmes por gênero (decisão da Pessoa 1)
 
 
-def p1_tabela_cobertura(df: pd.DataFrame) -> pd.DataFrame:
+def p1_tabela_cobertura(df: pd.DataFrame, min_filmes: int = MIN_FILMES_GENERO) -> pd.DataFrame:
     """Por gênero: nº de filmes e % com orçamento, receita e os dois (= retorno calculável) após tratar().
 
-    Gêneros com menos de MIN_FILMES_GENERO filmes ficam de fora. Ordem: menor cobertura primeiro.
+    Gêneros com menos de `min_filmes` filmes ficam de fora. Ordem: menor cobertura primeiro.
     """
     base = df[["id", "genres", "orcamento_informado", "receita_informada", "retorno"]].copy()
     base["retorno_calculavel"] = base["retorno"].notna()
@@ -67,14 +98,19 @@ def p1_tabela_cobertura(df: pd.DataFrame) -> pd.DataFrame:
         pct_retorno=("retorno_calculavel", "mean"),
     ).reset_index().rename(columns={"genres": "genero"})
     tab["gênero"] = tab["genero"].map(lambda g: GENEROS_PT.get(g, g))
-    tab = tab.loc[tab["filmes"].ge(MIN_FILMES_GENERO)]
+    tab = tab.loc[tab["filmes"].ge(min_filmes)]
     return tab.sort_values("pct_retorno").reset_index(drop=True)
 
 
-def p1_exploratorio_cobertura(df: pd.DataFrame, modo: str | None = None) -> go.Figure:
+def p1_exploratorio_cobertura(df: pd.DataFrame, modo: str | None = None, generos=None,
+                              min_filmes: int = MIN_FILMES_GENERO) -> go.Figure:
     modo = modo or modo_atual()
     c = CORES[modo]
-    tab = p1_tabela_cobertura(df)
+    tab = p1_tabela_cobertura(df, min_filmes)
+    if generos is not None:
+        tab = tab.loc[tab["genero"].isin(generos)]
+    if tab.empty:
+        raise SemDados
     geral = df["retorno"].notna().mean()
     fig = go.Figure(go.Bar(
         x=tab["pct_retorno"], y=tab["gênero"], orientation="h",
@@ -88,10 +124,10 @@ def p1_exploratorio_cobertura(df: pd.DataFrame, modo: str | None = None) -> go.F
     ))
     fig.add_vline(x=geral, line=dict(dash="dash", color=c["texto_suave"], width=1.2))
     fig.add_annotation(x=geral, y=1, yref="paper", yanchor="bottom", xanchor="left", xshift=4, showarrow=False,
-                       text=f"base toda: {fmt_pct(geral, 0)}", font=dict(family=FONTE_TEXTO, size=11, color=c["texto_suave"]))
+                       text=f"todos os filmes: {fmt_pct(geral, 0)}", font=dict(family=FONTE_TEXTO, size=11, color=c["texto_suave"]))
     aplicar_estilo(fig, "Quanto de cada gênero tem orçamento e receita informados",
-                   f"% de filmes com retorno calculável (orçamento e receita válidos) · gêneros com ao menos {MIN_FILMES_GENERO} filmes",
-                   modo=modo, altura=620)
+                   f"% de filmes com retorno calculável (orçamento e receita válidos) · gêneros com ao menos {min_filmes} filmes",
+                   modo=modo, altura=max(260, min(620, 152 + 26 * len(tab))))  # base toda = 620 px, altura original
     fig.update_xaxes(title_text="Filmes com retorno calculável (% do gênero)", range=[0, 1.08], tickformat=".0%",
                      tickvals=[0, 0.25, 0.5, 0.75, 1], ticktext=["0%", "25%", "50%", "75%", "100%"])
     fig.update_yaxes(showgrid=False, tickfont=dict(family=FONTE_TEXTO, size=12, color=c["texto"]))
@@ -105,22 +141,26 @@ def p1_exploratorio_cobertura(df: pd.DataFrame, modo: str | None = None) -> go.F
 GENEROS_P2 = ["Action", "Comedy", "Drama", "Adventure"]
 
 
-def p2_exploratorio_dispersao(df: pd.DataFrame, modo: str | None = None) -> go.Figure:
+def p2_exploratorio_dispersao(df: pd.DataFrame, modo: str | None = None, generos=None, min_filmes: int = 0) -> go.Figure:
     modo = modo or modo_atual()
-    base = _base_genero(df, GENEROS_P2)
+    base = _base_genero(df, _escolher(GENEROS_P2, generos), min_filmes=min_filmes)
+    generos = _presentes(base, GENEROS_P2)
     base["orcamento_mi"] = base["budget"] / 1e6
-    fig = make_subplots(rows=2, cols=2, shared_xaxes=True, shared_yaxes=True,
-                        subplot_titles=[GENEROS_PT[g] for g in GENEROS_P2],
+    linhas, colunas = _grade(len(generos), 2)
+    fig = make_subplots(rows=linhas, cols=colunas, shared_xaxes=True, shared_yaxes=True,
+                        subplot_titles=[GENEROS_PT[g] for g in generos],
                         horizontal_spacing=0.06, vertical_spacing=0.12)
-    for k, genero in enumerate(GENEROS_P2):
+    for k, genero in enumerate(generos):
         d = base.loc[base["genres"].eq(genero)]
         fig.add_trace(go.Scatter(
             x=d["orcamento_mi"], y=d["retorno"], mode="markers", name=GENEROS_PT[genero], showlegend=False,
             marker=dict(color=_cor_genero(genero, modo), size=5, opacity=0.35),
             hovertemplate="orçamento: US$ %{x:,.1f}M<br>retorno: %{y:.2f}×<extra>" + GENEROS_PT[genero] + "</extra>",
-        ), row=k // 2 + 1, col=k % 2 + 1)
+        ), row=k // colunas + 1, col=k % colunas + 1)
     aplicar_estilo(fig, "Orçamento e retorno dos filmes por gênero",
-                   "Cada ponto é um filme · eixos em escala logarítmica · mesma escala nos quatro painéis", modo=modo, altura=620)
+                   "Cada ponto é um filme · eixos em escala logarítmica · mesma escala "
+                   + ("nos quatro painéis" if len(generos) == 4 else "em todos os painéis"),
+                   modo=modo, altura=200 + 210 * linhas)
     eixo_log(fig, "x", sufixo="", valores=[0.01, 0.1, 1, 10, 100])
     eixo_log(fig, "y", valores=[0.01, 0.1, 1, 10, 100, 1000, 10000])
     fig.update_xaxes(ticktext=[fmt_usd(v * 1e6) for v in [0.01, 0.1, 1, 10, 100]])
@@ -131,21 +171,21 @@ def p2_exploratorio_dispersao(df: pd.DataFrame, modo: str | None = None) -> go.F
 # ==========================================================================================
 # Pessoa 2 — explanatório: mediana do retorno por faixa de orçamento e gênero (barras agrupadas)
 # ==========================================================================================
-def p2_tabela_faixas(df: pd.DataFrame) -> pd.DataFrame:
+def p2_tabela_faixas(df: pd.DataFrame, generos=None, min_filmes: int = 0) -> pd.DataFrame:
     """Mediana do retorno e nº de filmes por faixa e gênero (mesmo cálculo do notebook)."""
-    base = _base_genero(df, GENEROS_P2)
+    base = _base_genero(df, _escolher(GENEROS_P2, generos), min_filmes=min_filmes)
     base["faixa"] = pd.cut(base["budget"], bins=[0, *LIMITES_FAIXAS, np.inf], labels=ROTULOS_FAIXAS, right=True)
     return base.groupby(["faixa", "genres"], observed=True)["retorno"].agg(mediana="median", filmes="size").reset_index()
 
 
-def p2_explanatorio_faixas(df: pd.DataFrame, modo: str | None = None) -> go.Figure:
+def p2_explanatorio_faixas(df: pd.DataFrame, modo: str | None = None, generos=None, min_filmes: int = 0) -> go.Figure:
     modo = modo or modo_atual()
     c = CORES[modo]
-    tab = p2_tabela_faixas(df)
+    tab = p2_tabela_faixas(df, generos, min_filmes)
     maximos = tab.groupby("faixa", observed=True)["mediana"].transform("max")
     tab["maior"] = tab["mediana"].eq(maximos)
     fig = go.Figure()
-    for genero in GENEROS_P2:
+    for genero in _presentes(tab, GENEROS_P2):
         d = tab.loc[tab["genres"].eq(genero)].set_index("faixa").reindex(ROTULOS_FAIXAS)
         fig.add_trace(go.Bar(
             x=ROTULOS_FAIXAS, y=d["mediana"], name=GENEROS_PT[genero], marker_color=_cor_genero(genero, modo),
@@ -173,19 +213,22 @@ def p2_explanatorio_faixas(df: pd.DataFrame, modo: str | None = None) -> go.Figu
 GENEROS_P3 = ["Drama", "Comedy", "Thriller", "Action", "Adventure", "Romance"]
 
 
-def p3_exploratorio_densidade(df: pd.DataFrame, modo: str | None = None) -> go.Figure:
+def p3_exploratorio_densidade(df: pd.DataFrame, modo: str | None = None, generos=None, min_filmes: int = 0) -> go.Figure:
     modo = modo or modo_atual()
     c = CORES[modo]
-    base = _base_genero(df, GENEROS_P3, so_positivo=True)
+    base = _base_genero(df, _escolher(GENEROS_P3, generos), so_positivo=True, min_filmes=min_filmes)
+    generos = _presentes(base, GENEROS_P3)
     lx, ly = np.log10(base["budget"]), np.log10(base["retorno"])
-    x_bins = np.linspace(lx.min(), lx.max(), 34)  # = np.logspace do notebook, em log10
-    y_bins = np.linspace(ly.min(), ly.max(), 34)
+    # = np.logspace do notebook, em log10 (a folga só entra se o recorte deixar todos os valores iguais)
+    x_bins = np.linspace(lx.min() - 0.5 * (lx.min() == lx.max()), lx.max() + 0.5 * (lx.min() == lx.max()), 34)
+    y_bins = np.linspace(ly.min() - 0.5 * (ly.min() == ly.max()), ly.max() + 0.5 * (ly.min() == ly.max()), 34)
     xc, yc = (x_bins[:-1] + x_bins[1:]) / 2, (y_bins[:-1] + y_bins[1:]) / 2
 
-    titulos = [f"{GENEROS_PT[g]} · n={_br(base['genres'].eq(g).sum(), 0)}" for g in GENEROS_P3]
-    fig = make_subplots(rows=2, cols=3, shared_xaxes=True, shared_yaxes=True, subplot_titles=titulos,
+    titulos = [f"{GENEROS_PT[g]} · n={_br(base['genres'].eq(g).sum(), 0)}" for g in generos]
+    linhas, colunas = _grade(len(generos), 3)
+    fig = make_subplots(rows=linhas, cols=colunas, shared_xaxes=True, shared_yaxes=True, subplot_titles=titulos,
                         horizontal_spacing=0.04, vertical_spacing=0.12)
-    for k, genero in enumerate(GENEROS_P3):
+    for k, genero in enumerate(generos):
         d = base.loc[base["genres"].eq(genero)]
         cont, _, _ = np.histogram2d(np.log10(d["budget"]), np.log10(d["retorno"]), bins=[x_bins, y_bins])
         z = np.where(cont > 0, np.log10(np.maximum(cont, 1)), np.nan).T  # escala de cor log (como LogNorm), bins vazios sem cor
@@ -194,8 +237,8 @@ def p3_exploratorio_densidade(df: pd.DataFrame, modo: str | None = None) -> go.F
             colorscale=[[0, c["cartao"]], [1, _cor_genero(genero, modo)]], zmin=0,
             hovertemplate="orçamento ≈ US$ %{x:.2f} (log10)<br>retorno ≈ %{y:.2f} (log10)<br>filmes: %{customdata:.0f}<extra>"
                           + GENEROS_PT[genero] + "</extra>",
-        ), row=k // 3 + 1, col=k % 3 + 1)
-        fig.add_hline(y=0, line=dict(dash="dash", color=c["texto_suave"], width=1), row=k // 3 + 1, col=k % 3 + 1)
+        ), row=k // colunas + 1, col=k % colunas + 1)
+        fig.add_hline(y=0, line=dict(dash="dash", color=c["texto_suave"], width=1), row=k // colunas + 1, col=k % colunas + 1)
 
     marcas_x = [1e4, 1e6, 1e8]  # poucas marcas para não encostar entre painéis
     marcas_y = [0.01, 0.1, 1, 10, 100, 1000, 10000]
@@ -203,7 +246,7 @@ def p3_exploratorio_densidade(df: pd.DataFrame, modo: str | None = None) -> go.F
     fig.update_yaxes(tickvals=np.log10(marcas_y), ticktext=[f"{_br(v, 0 if v >= 1 else (1 if v >= 0.1 else 2))}×" for v in marcas_y], showgrid=False)
     aplicar_estilo(fig, "Concentração e dispersão de orçamento e retorno por gênero",
                    "Filmes por região (cor mais intensa = mais filmes; cada painel tem sua própria escala) · linha tracejada = 1×",
-                   modo=modo, altura=620)
+                   modo=modo, altura=200 + 210 * linhas)
     _rotulos_titulos_subplot(fig, modo, "Orçamento (US$, escala logarítmica)", "Retorno bruto (receita ÷ orçamento, escala logarítmica)")
     return fig
 
@@ -221,12 +264,14 @@ def _bootstrap_spearman(x, y, n_boot=1000, seed=42):
     return np.nanquantile(estimativas, [0.025, 0.975])
 
 
-def p3_tabela_spearman(df: pd.DataFrame) -> pd.DataFrame:
+def p3_tabela_spearman(df: pd.DataFrame, generos=None, min_filmes: int = 0) -> pd.DataFrame:
     """Mesmo cálculo da célula da Pessoa 3 (mesmas sementes) — os números batem com o storytelling."""
-    base = _base_genero(df, GENEROS_P3, so_positivo=True)
+    base = _base_genero(df, _escolher(GENEROS_P3, generos), so_positivo=True, min_filmes=min_filmes)
     linhas = []
-    for i, genero in enumerate(GENEROS_P3):
+    for i, genero in enumerate(GENEROS_P3):  # semente pela posição na lista do autor, mesmo com filtro
         d = base.loc[base["genres"].eq(genero)]
+        if d.empty:
+            continue
         x, y = d["budget"].to_numpy(), d["retorno"].to_numpy()
         rho = pd.Series(x).rank().corr(pd.Series(y).rank())
         inf, sup = _bootstrap_spearman(x, y, seed=42 + i)
@@ -234,10 +279,15 @@ def p3_tabela_spearman(df: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(linhas).sort_values("rho").reset_index(drop=True)
 
 
-def p3_explanatorio_spearman(df: pd.DataFrame, modo: str | None = None) -> go.Figure:
+TITULO_P3_EXPLANATORIO = "Associação negativa em quatro gêneros; próxima de zero em dois"
+
+
+def p3_explanatorio_spearman(df: pd.DataFrame, modo: str | None = None, generos=None, min_filmes: int = 0,
+                             titulo: str = TITULO_P3_EXPLANATORIO) -> go.Figure:
+    """`titulo` traz a conclusão da Pessoa 3 para a base inteira; o dashboard troca por um neutro com filtro ativo."""
     modo = modo or modo_atual()
     c = CORES[modo]
-    tab = p3_tabela_spearman(df)
+    tab = p3_tabela_spearman(df, generos, min_filmes)
     max_n = tab["filmes"].max()
     fig = go.Figure()
     for _, r in tab.iterrows():
@@ -251,9 +301,9 @@ def p3_explanatorio_spearman(df: pd.DataFrame, modo: str | None = None) -> go.Fi
                            f"IC 95%: {_br(r['ic_inf'], 3)} a {_br(r['ic_sup'], 3)}<br>filmes: {_br(r['filmes'], 0)}<extra></extra>"),
         ))
     fig.add_vline(x=0, line=dict(dash="dash", color=c["texto_suave"], width=1.2))
-    aplicar_estilo(fig, "Associação negativa em quatro gêneros; próxima de zero em dois",
+    aplicar_estilo(fig, titulo,
                    "Correlação de Spearman entre orçamento e retorno · segmento = IC bootstrap de 95% · tamanho = nº de filmes",
-                   modo=modo, altura=440)
+                   modo=modo, altura=max(260, 140 + 50 * len(tab)))
     fig.update_xaxes(title_text="Correlação de Spearman entre orçamento e retorno", range=[-1, 1], zeroline=False)
     fig.update_yaxes(showgrid=False, tickfont=dict(family=FONTE_TEXTO, size=13, color=c["texto"]))
     return fig
@@ -263,9 +313,181 @@ def p3_explanatorio_spearman(df: pd.DataFrame, modo: str | None = None) -> go.Fi
 # Catálogo (ordem de exibição no dashboard)
 # ==========================================================================================
 GRAFICOS = [
-    {"id": "p1_exploratorio", "tipo": "exploratório", "autor": "Pessoa 1", "funcao": p1_exploratorio_cobertura},
-    {"id": "p2_exploratorio", "tipo": "exploratório", "autor": "Pessoa 2", "funcao": p2_exploratorio_dispersao},
-    {"id": "p3_exploratorio", "tipo": "exploratório", "autor": "Pessoa 3", "funcao": p3_exploratorio_densidade},
-    {"id": "p2_explanatorio", "tipo": "explanatório", "autor": "Pessoa 2", "funcao": p2_explanatorio_faixas},
-    {"id": "p3_explanatorio", "tipo": "explanatório", "autor": "Pessoa 3", "funcao": p3_explanatorio_spearman},
+# "secao": título descritivo usado no dashboard enquanto o autor não escreve o título-achado (notas.TITULOS_ACHADO)
+    {"id": "p1_exploratorio", "tipo": "exploratório", "autor": "Pessoa 1", "funcao": p1_exploratorio_cobertura,
+     "secao": "Cobertura de orçamento e receita por gênero", "curto": "Cobertura por gênero"},
+    {"id": "p2_exploratorio", "tipo": "exploratório", "autor": "Pessoa 2", "funcao": p2_exploratorio_dispersao,
+     "secao": "Orçamento e retorno de cada filme, em quatro gêneros", "curto": "Dispersão por gênero"},
+    {"id": "p3_exploratorio", "tipo": "exploratório", "autor": "Pessoa 3", "funcao": p3_exploratorio_densidade,
+     "secao": "Onde os filmes se concentram em orçamento e retorno, em seis gêneros", "curto": "Concentração por gênero"},
+    {"id": "p2_explanatorio", "tipo": "explanatório", "autor": "Pessoa 2", "funcao": p2_explanatorio_faixas,
+     "secao": "Retorno mediano por faixa de orçamento e gênero", "curto": "Retorno por faixa"},
+    {"id": "p3_explanatorio", "tipo": "explanatório", "autor": "Pessoa 3", "funcao": p3_explanatorio_spearman,
+     "secao": "Associação entre orçamento e retorno em cada gênero", "curto": "Associação por gênero",
+     "titulo_neutro": "Associação entre orçamento e retorno por gênero no recorte"},
 ]
+
+
+# ==========================================================================================
+# Dashboard — animação década a década (diferencial interativo; não é gráfico de nenhum autor)
+# ==========================================================================================
+# [IA] Claude Code – animação do percurso das medianas por década, com troca de métrica e de escala
+MIN_FILMES_DECADA = 10  # décadas com menos filmes que isso (com retorno) ficam fora da animação
+
+# métrica do eixo vertical: rótulo, nome no resumo (concordância), unidade ("x" ou "usd") e linha de empate
+METRICAS = {
+    "retorno": {"rotulo": "Retorno (receita ÷ orçamento)", "resumo": "retorno mediano", "unidade": "x",
+                "empate": "empate (1×)"},
+    "lucro": {"rotulo": "Lucro bruto (receita − orçamento, US$)", "resumo": "lucro bruto mediano", "unidade": "usd",
+              "empate": "empate (US$ 0)"},
+    "receita": {"rotulo": "Receita (US$)", "resumo": "receita mediana", "unidade": "usd",
+                "empate": "empate (receita = orçamento)"},
+}
+ESCALAS = {"log": "Logarítmica", "linear": "Linear"}
+
+
+def _rotulo_decada(d: int) -> str:
+    return f"anos {d % 100:02d}" if d < 2000 else f"anos {d}"
+
+
+def _fmt_valor(v: float, unidade: str) -> str:
+    if unidade == "x":
+        return fmt_mult(v)
+    casas = 1 if 1e6 <= abs(v) < 1e7 else 0
+    return ("−" if v < 0 else "") + fmt_usd(abs(v), casas)
+
+
+def _marcas_lineares(lo: float, hi: float, n: int = 5) -> list[float]:
+    """~n marcas "redondas" (1, 2, 2,5 ou 5 × 10^k) entre lo e hi."""
+    bruto = (hi - lo) / n
+    base = 10 ** np.floor(np.log10(bruto))
+    passo = next(m * base for m in (1, 2, 2.5, 5, 10) if m * base >= bruto)
+    return list(np.arange(np.ceil(lo / passo) * passo, hi + passo / 2, passo))
+
+
+def _eixo(fig: go.Figure, eixo: str, valores: pd.Series, escala: str, unidade: str, titulo: str) -> str:
+    """Intervalo fixo (o mesmo em todos os quadros) e marcas do eixo. Devolve o aviso de corte, se houver."""
+    atualizar = fig.update_xaxes if eixo == "x" else fig.update_yaxes
+    rot = (lambda v: ("−" if v < 0 else "") + fmt_usd(abs(v)).replace(",0B", "B")) if unidade == "usd" else \
+          (lambda v: f"{_br(v, max(0, -int(np.floor(np.log10(v)))) if v > 0 else 0)}×")
+    if escala == "log":
+        lv = np.log10(valores)
+        lo, hi = lv.min() - 0.25, lv.max() + 0.25
+        marcas = [10.0 ** k for k in range(int(np.floor(lo)), int(np.ceil(hi)) + 1) if lo <= k <= hi]
+        atualizar(type="log", range=[lo, hi], tickvals=marcas, ticktext=[rot(v) for v in marcas],
+                  minor=dict(showgrid=False),
+                  title_text=f"{titulo[:-1]}, escala logarítmica)" if titulo.endswith(")") else f"{titulo} (escala logarítmica)")
+        return ""
+    # linear: corta o 1% mais extremo de cada lado (senão poucos outliers achatam todo o resto)
+    lo, hi = valores.quantile(0.01), valores.quantile(0.99)
+    lo = min(lo, 0)
+    folga = (hi - lo) * 0.05
+    marcas = [m for m in _marcas_lineares(lo, hi) if lo - folga <= m <= hi + folga]
+    atualizar(type="linear", range=[lo - folga, hi + folga], tickvals=marcas, ticktext=[rot(v) for v in marcas],
+              title_text=titulo)
+    return "corta" if (valores > hi + folga).any() or (valores < lo - folga).any() else ""
+
+
+def animacao_decadas(df: pd.DataFrame, modo: str | None = None, generos=None,
+                     metrica: str = "retorno", escala: str = "log") -> go.Figure:
+    """Dispersão orçamento × métrica animada por década, com a mediana da década e o percurso das medianas.
+
+    metrica: "retorno" | "lucro" | "receita" (eixo vertical).  escala: "log" | "linear" (os dois eixos);
+    lucro pode ser negativo, então usa sempre escala linear.
+    `generos`: None = todos; senão, filmes com algum dos gêneros escolhidos. Levanta SemDados se sobrar < 2 décadas.
+    Os mesmos filmes entram em todas as métricas: os com orçamento e receita válidos.
+    """
+    modo = modo or modo_atual()
+    c = CORES[modo]
+    m = METRICAS[metrica]
+    escala = "linear" if metrica == "lucro" else escala
+    base = df.loc[df["retorno"].gt(0) & df["budget"].gt(0) & df["ano"].notna(),
+                  ["title", "ano", "budget", "revenue", "retorno", "genres"]]
+    if generos is not None:
+        base = base.loc[base["genres"].map(lambda gs: bool(set(gs) & set(generos)))]
+    base = base.assign(decada=(base["ano"] // 10 * 10).astype(int),
+                       y={"retorno": base["retorno"], "lucro": base["revenue"] - base["budget"],
+                          "receita": base["revenue"]}[metrica])
+    base = base.loc[base["decada"].map(base["decada"].value_counts()).ge(MIN_FILMES_DECADA)]
+    decadas = sorted(base["decada"].unique())
+    if len(decadas) < 2:
+        raise SemDados
+    med = base.groupby("decada").agg(orc=("budget", "median"), y=("y", "median"), n=("y", "size")).loc[decadas]
+
+    # linha de empate: 1× no retorno, US$ 0 no lucro, receita = orçamento na receita (diagonal)
+    x_lim = np.array([base["budget"].min() / 10, base["budget"].max() * 10])
+    y_empate = {"retorno": [1, 1], "lucro": [0, 0], "receita": x_lim}[metrica]
+    fmt_y = "%{y:.2f}×" if m["unidade"] == "x" else "US$ %{y:,.0f}"
+    fonte_rotulo = dict(family=FONTE_TEXTO, size=11, color=c["texto_suave"])
+
+    def tracos(i: int) -> list[go.Scatter]:
+        d = decadas[i]
+        filmes = base.loc[base["decada"].eq(d)]
+        trilha = med.iloc[: i + 1]
+        return [
+            go.Scatter(x=x_lim, y=y_empate, mode="lines", name=m["empate"], hoverinfo="skip",
+                       line=dict(dash="dash", color=c["texto_suave"], width=1)),
+            go.Scatter(x=filmes["budget"], y=filmes["y"], mode="markers", name="filmes da década",
+                       # décadas com poucos filmes: pontos mais opacos para não sumirem
+                       marker=dict(color=c["destaque"], size=6 if len(filmes) > 200 else 8,
+                                   opacity=0.35 if len(filmes) > 200 else 0.7, line=dict(width=0)),
+                       customdata=np.column_stack([filmes["title"], filmes["ano"].astype(int)]),
+                       hovertemplate="<b>%{customdata[0]}</b> (%{customdata[1]})<br>orçamento: US$ %{x:,.0f}"
+                                     f"<br>{m['resumo'].split()[0]}: {fmt_y}<extra></extra>"),
+            go.Scatter(x=trilha["orc"], y=trilha["y"], mode="lines+markers+text", name="percurso das medianas",
+                       line=dict(color=c["texto"], width=2.5),
+                       marker=dict(color=c["texto"], size=8, line=dict(color=c["cartao"], width=1.5)),
+                       # rótulo só no início do percurso: as medianas ficam próximas e os rótulos se sobrepõem
+                       text=[_rotulo_decada(x) if k == 0 else "" for k, x in enumerate(trilha.index)],
+                       customdata=[_rotulo_decada(x) for x in trilha.index],
+                       textposition="top left", textfont=fonte_rotulo,
+                       hovertemplate=f"%{{customdata}}<br>orçamento mediano: US$ %{{x:,.0f}}<br>{m['resumo']}: {fmt_y}"
+                                     "<extra></extra>"),
+            go.Scatter(x=[med["orc"].iloc[i]], y=[med["y"].iloc[i]], mode="markers", name="mediana da década",
+                       marker=dict(color=c["texto"], size=18, symbol="diamond", line=dict(color=c["cartao"], width=2)),
+                       hovertemplate=f"{_rotulo_decada(d)}<br>orçamento mediano: US$ %{{x:,.0f}}"
+                                     f"<br>{m['resumo']}: {fmt_y}<extra></extra>"),
+        ]
+
+    def legenda_quadro(i: int) -> list[dict]:
+        r = med.iloc[i]
+        return [dict(text=f"<b>{_rotulo_decada(decadas[i])}</b> · {_br(r['n'], 0)} filmes · {m['resumo']} "
+                          f"{_fmt_valor(r['y'], m['unidade'])} · orçamento mediano {_fmt_valor(r['orc'], 'usd')}",
+                     xref="paper", yref="paper", x=0, y=1, xanchor="left", yanchor="bottom", yshift=6, showarrow=False,
+                     font=dict(family=FONTE_TEXTO, size=13, color=c["texto"]))]
+
+    fig = go.Figure(data=tracos(0),
+                    frames=[go.Frame(data=tracos(i), name=str(d), layout=dict(annotations=legenda_quadro(i)))
+                            for i, d in enumerate(decadas)])
+    # eixos fixos (senão a escala muda a cada quadro)
+    corte = _eixo(fig, "x", base["budget"], escala, "usd", "Orçamento (US$ nominais)")
+    corte += _eixo(fig, "y", base["y"], escala, m["unidade"], m["rotulo"])
+    subtitulo = ("Cada ponto é um filme · ◆ = mediana da década · linha = percurso das medianas · "
+                 + ("valores nominais · eixos cortados no 1% mais extremo" if corte
+                    else "valores nominais, sem correção pela inflação"))
+    aplicar_estilo(fig, f"{m['rotulo'].split(' (')[0]} e orçamento década a década", subtitulo, modo=modo, altura=640)
+
+    quadro = dict(frame=dict(duration=1100, redraw=True), transition=dict(duration=500, easing="cubic-in-out"), mode="immediate")
+    fonte_controle = dict(family=FONTE_TEXTO, size=12, color=c["texto"])
+    fig.update_layout(
+        annotations=[*fig.layout.annotations, *legenda_quadro(0)],
+        legend=dict(orientation="h", yanchor="bottom", y=1.06, xanchor="right", x=1),
+        margin=dict(b=120),
+        updatemenus=[dict(
+            type="buttons", direction="left", x=0, y=-0.13, xanchor="left", yanchor="top", showactive=False,
+            pad=dict(r=8, t=0), font=fonte_controle, bgcolor=c["cartao"], bordercolor=c["linha"],
+            buttons=[dict(label="▶ Animar", method="animate", args=[None, {**quadro, "fromcurrent": True}]),
+                     dict(label="⏸ Pausar", method="animate",
+                          args=[[None], dict(frame=dict(duration=0, redraw=False), transition=dict(duration=0), mode="immediate")])],
+        )],
+        sliders=[dict(
+            active=0, x=0.2, len=0.8, y=-0.1, xanchor="left", yanchor="top", pad=dict(t=0, b=0),
+            currentvalue=dict(visible=False), font=fonte_controle, bgcolor=c["cartao"], bordercolor=c["linha"],
+            activebgcolor=c["destaque"], tickcolor=c["texto_suave"],
+            transition=dict(duration=500, easing="cubic-in-out"),
+            steps=[dict(label=_rotulo_decada(d), method="animate",
+                        args=[[str(d)], dict(frame=dict(duration=500, redraw=True), transition=dict(duration=500), mode="immediate")])
+                   for d in decadas],
+        )],
+    )
+    return fig

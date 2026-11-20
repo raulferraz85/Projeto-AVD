@@ -1,25 +1,32 @@
 """Dashboard do projeto (Streamlit) — Parte Específica (TMDB 5000) + Parte Comum (Wine Quality).
 
 Rodar da raiz do projeto:  streamlit run src/parte_especifica/dashboard.py
-Alternar claro/escuro: menu ⋮ (canto superior direito) → Settings → Theme.
+Alternar claro/escuro: menu ⋮ (canto superior direito) → Settings → Theme (o rodapé da barra lateral lembra isso).
 
 Estrutura: uma função por página, registradas no st.navigation lá embaixo.
 Gráficos vêm de graficos.py e notas de notas.py; aqui só fica a montagem das páginas.
-Os gráficos usam a base INTEIRA (sem filtro) porque as notas e o storytelling descrevem a base inteira.
+Filtros: barra lateral nas páginas Exploração, Explicação e Dados (barra_filtros). Sem filtro, os gráficos
+usam a base INTEIRA, que é o que as notas e o storytelling descrevem; com filtro ativo, a página avisa isso.
 """
 # [IA] Claude Code – estrutura do dashboard (navegação, páginas, cache e montagem dos gráficos)
+# [IA] Claude Code – filtros na barra lateral (gênero, orçamento, período, mínimo de filmes por gênero)
+# [IA] Claude Code – cards de KPI que reagem ao recorte (kpis_recorte)
+# [IA] Claude Code – página Década a década (animação, troca de métrica e de escala)
+# [IA] Claude Code – Início com a resposta primeiro e navegação por cards; títulos-achado; um gráfico por vez na Exploração
 from __future__ import annotations
 
 import json
+from dataclasses import dataclass
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import streamlit as st
 
 from dados import DECISOES, RAIZ, carregar_filmes, tratar
-from estilo import card, fmt_mult, fmt_pct, fmt_usd, _br, grafico, injetar_css, nota, usar_tema
-from graficos import GRAFICOS
-from notas import NOTAS, RESPOSTA_PERGUNTA, STORYTELLING_P3
+from estilo import GENEROS_PT, card, fmt_mult, fmt_pct, fmt_usd, _br, grafico, injetar_css, nota, usar_tema
+from graficos import ESCALAS, GRAFICOS, METRICAS, MIN_FILMES_DECADA, MIN_FILMES_GENERO, SemDados, animacao_decadas
+from notas import NOTAS, RESPOSTA_CURTA, RESPOSTA_PERGUNTA, STORYTELLING_P3, TITULOS_ACHADO
 
 PERGUNTA = "Filmes com orçamento maior têm retorno (receita ÷ orçamento) maior, ou isso varia por gênero?"
 PUBLICO = "Gestor de estúdio ou produtora"
@@ -43,19 +50,194 @@ def base_tratada() -> pd.DataFrame:
     return tratar(base_bruta())
 
 
+# ==========================================================================================
+# Filtros (barra lateral)
+# ==========================================================================================
+# marcas do filtro de orçamento, em US$ milhões (inclui os limites das faixas da Pessoa 2: 20, 50 e 100)
+MARCAS_ORCAMENTO = [0, 1, 5, 10, 20, 50, 100, 200, 400]
+CHAVES_FILTRO = ["f_generos", "f_orcamento", "f_anos", "f_min_filmes"]
+
+
+# O Streamlit apaga o estado de um widget quando a página não o desenha (Início, Wine Quality). Para os filtros
+# sobreviverem à troca de página, cada widget guarda o valor numa chave "sombra" (_chave) no on_change e é
+# recriado a partir dela. (Reatribuir st.session_state[chave] não serve: exige tirar o value= dos sliders,
+# e sem value= em tupla o slider deixa de ser de intervalo.)
+def _salvo(chave: str, padrao):
+    return st.session_state.get("_" + chave, padrao)
+
+
+def _salvar(chave: str) -> None:
+    st.session_state["_" + chave] = st.session_state[chave]
+
+
+@dataclass(frozen=True)
+class Filtros:
+    generos: tuple[str, ...] | None = None      # None = todos os gêneros
+    orcamento: tuple[float, float] | None = None  # US$; None = sem filtro (mantém filmes sem orçamento)
+    anos: tuple[int, int] | None = None           # None = sem filtro
+    min_filmes: int = MIN_FILMES_GENERO
+
+    @property
+    def ativo(self) -> bool:
+        return self != Filtros()
+
+
+@st.cache_data(show_spinner=False)
+def opcoes_filtro() -> tuple[list[str], int, int]:
+    df = base_tratada()
+    presentes = set(df["genres"].explode().dropna())
+    generos = sorted((g for g in presentes if g in GENEROS_PT), key=lambda g: GENEROS_PT[g])
+    return generos, int(df["ano"].min()), int(df["ano"].max())
+
+
+def _rotulo_orcamento(v: float) -> str:
+    if v == MARCAS_ORCAMENTO[-1]:
+        return "sem limite"
+    return "US$ 0" if v == 0 else fmt_usd(v * 1e6)
+
+
+def _limpar_filtros() -> None:
+    for k in CHAVES_FILTRO:
+        st.session_state.pop(k, None)
+        st.session_state.pop("_" + k, None)
+
+
+def barra_filtros() -> Filtros:
+    """Desenha os filtros na barra lateral e devolve o recorte escolhido."""
+    generos, ano_min, ano_max = opcoes_filtro()
+    with st.sidebar:
+        st.header("Filtros", divider="gray")
+        sel = st.multiselect("Gêneros", generos, key="f_generos", default=_salvo("f_generos", []),
+                             on_change=_salvar, args=("f_generos",), format_func=lambda g: GENEROS_PT[g],
+                             placeholder="Todos os gêneros",
+                             help="Cada gráfico mostra só os gêneros escolhidos pelo autor que também estiverem aqui.")
+        orc = st.select_slider("Orçamento", options=MARCAS_ORCAMENTO, key="f_orcamento",
+                               value=_salvo("f_orcamento", (0, MARCAS_ORCAMENTO[-1])),
+                               on_change=_salvar, args=("f_orcamento",), format_func=_rotulo_orcamento,
+                               help="Com este filtro ativo, filmes sem orçamento informado ficam de fora. "
+                                    "Não se aplica ao gráfico de cobertura (Pessoa 1).")
+        anos = st.slider("Ano de lançamento", ano_min, ano_max, key="f_anos", value=_salvo("f_anos", (ano_min, ano_max)),
+                         on_change=_salvar, args=("f_anos",))
+        min_filmes = st.slider("Mínimo de filmes por gênero", 10, 100, step=5, key="f_min_filmes",
+                               value=_salvo("f_min_filmes", MIN_FILMES_GENERO),
+                               on_change=_salvar, args=("f_min_filmes",),
+                               help="Gêneros com menos filmes que isso no recorte saem dos gráficos. "
+                                    f"O padrão ({MIN_FILMES_GENERO}) é o corte usado na análise.")
+        f = Filtros(
+            generos=tuple(sel) or None,
+            orcamento=None if orc == (0, MARCAS_ORCAMENTO[-1]) else
+            (orc[0] * 1e6, np.inf if orc[1] == MARCAS_ORCAMENTO[-1] else orc[1] * 1e6),
+            anos=None if anos == (ano_min, ano_max) else anos,
+            min_filmes=min_filmes,
+        )
+        df = filmes_do_recorte(f)
+        st.caption(f"**{_br(len(df), 0)}** de {_br(len(base_tratada()), 0)} filmes no recorte · "
+                   f"{_br(df['retorno'].notna().sum(), 0)} com retorno calculável")
+        st.button("Limpar filtros", icon=":material/filter_alt_off:", on_click=_limpar_filtros,
+                  disabled=not f.ativo, width="stretch")
+    return f
+
+
+@st.cache_data(show_spinner=False)
+def base_filtrada(orcamento: tuple[float, float] | None, anos: tuple[int, int] | None) -> pd.DataFrame:
+    """Base tratada com os filtros de linhas (orçamento e ano); gênero e mínimo de filmes ficam com cada gráfico."""
+    df = base_tratada()
+    if anos is not None:
+        df = df.loc[df["ano"].between(*anos)]
+    if orcamento is not None:
+        df = df.loc[df["budget"].between(*orcamento)]
+    return df
+
+
+def filmes_do_recorte(f: Filtros) -> pd.DataFrame:
+    """Filmes do recorte, com gênero contando como "tem algum dos gêneros escolhidos" (para contagem e tabela)."""
+    df = base_filtrada(f.orcamento, f.anos)
+    if f.generos is not None:
+        df = df.loc[df["genres"].map(lambda gs: bool(set(gs) & set(f.generos)))]
+    return df
+
+
+def aviso_recorte(f: Filtros) -> None:
+    if f.ativo:
+        st.info("**Recorte ativo.** Os números dos gráficos refletem os filtros da barra lateral, mas as notas "
+                "dos autores e o storytelling foram escritos para a base inteira. Use *Limpar filtros* para voltar.",
+                icon=":material/filter_alt:")
+
+
+def _resumo(df: pd.DataFrame) -> dict:
+    """Os mesmos 4 números dos cards do Início, para qualquer recorte."""
+    ret = df["retorno"].dropna()
+    return {"n": len(ret), "mediana": ret.median(), "abaixo": (ret < 1).mean() if len(ret) else np.nan,
+            "orcamento": df.loc[ret.index, "budget"].median()}
+
+
+def _sinal(texto: str, valor: float) -> str:
+    return texto if valor < 0 else f"+{texto}"  # o "-" já vem do número; o Streamlit usa o sinal para a seta
+
+
+def kpis_recorte(f: Filtros) -> None:
+    """Cards do recorte atual; com filtro ativo, cada card mostra a diferença em relação à base inteira."""
+    base, rec = _resumo(base_tratada()), _resumo(filmes_do_recorte(f))
+    vazio = rec["n"] == 0
+    desc = "vs. base inteira"
+    st.caption("**Recorte atual** (filmes com algum dos gêneros escolhidos)" if f.ativo else "**Base inteira**")
+    c1, c2, c3, c4 = st.columns(4)
+    with c1:
+        d = rec["mediana"] - base["mediana"]
+        card("Retorno mediano", "—" if vazio else fmt_mult(rec["mediana"]), destaque=True, chave="kpi_mediana",
+             delta=None if vazio or not f.ativo else _sinal(fmt_mult(d), d), descricao_delta=desc,
+             ajuda=f"Metade dos filmes do recorte fica acima deste valor. Base inteira: {fmt_mult(base['mediana'])}.")
+    with c2:
+        card("Filmes com retorno", _br(rec["n"], 0), chave="kpi_filmes",
+             delta=f"{fmt_pct(rec['n'] / base['n'], 0)} da base" if f.ativo else None, cor_delta="off", seta="off",
+             ajuda="Filmes do recorte com orçamento e receita válidos (retorno calculável). "
+                   "Medianas com poucos filmes oscilam muito.")
+    with c3:
+        d = (rec["abaixo"] - base["abaixo"]) * 100
+        card("Retorno abaixo de 1×", "—" if vazio else fmt_pct(rec["abaixo"]), chave="kpi_abaixo",
+             delta=None if vazio or not f.ativo else _sinal(f"{_br(d, 1)} p.p.", d), cor_delta="inverse",
+             descricao_delta=desc,
+             ajuda=f"Filmes cuja receita foi menor que o orçamento. Base inteira: {fmt_pct(base['abaixo'])}.")
+    with c4:
+        d = rec["orcamento"] - base["orcamento"]
+        card("Orçamento mediano", "—" if vazio else fmt_usd(rec["orcamento"]), chave="kpi_orcamento",
+             delta=None if vazio or not f.ativo else ("-" if d < 0 else "+") + fmt_usd(abs(d), 1 if 1e6 <= abs(d) < 1e7 else 0),
+             cor_delta="off", descricao_delta=desc,
+             ajuda=f"Entre os filmes do recorte com retorno calculável. Base inteira: {fmt_usd(base['orcamento'])}.")
+
+
 @st.cache_data(show_spinner="Montando o gráfico…")
-def figura(id_grafico: str, modo: str):
-    """Figura plotly de um gráfico do catálogo (graficos.GRAFICOS), já no tema claro/escuro."""
+def figura(id_grafico: str, modo: str, f: Filtros = Filtros()):
+    """Figura plotly de um gráfico do catálogo (graficos.GRAFICOS), já no tema claro/escuro e no recorte `f`."""
     g = next(g for g in GRAFICOS if g["id"] == id_grafico)
-    return g["funcao"](base_tratada(), modo=modo)
+    # o gráfico de cobertura (Pessoa 1) mede quem tem orçamento informado: filtrar orçamento o deixaria trivial
+    df = base_filtrada(None if id_grafico == "p1_exploratorio" else f.orcamento, f.anos)
+    extra = {"titulo": g["titulo_neutro"]} if f.ativo and "titulo_neutro" in g else {}
+    return g["funcao"](df, modo=modo, generos=f.generos, min_filmes=f.min_filmes, **extra)
 
 
-def mostrar(id_grafico: str) -> None:
-    """Gráfico + nota analítica do autor (ou aviso de pendência, se ainda não existir)."""
-    if not any(g["id"] == id_grafico for g in GRAFICOS):
+def mostrar(id_grafico: str, f: Filtros = Filtros(), autor_pendente: str = "") -> None:
+    """Título + autoria (legenda) + gráfico + nota analítica do autor (ou avisos de pendência).
+
+    Título: o achado escrito pelo autor (notas.TITULOS_ACHADO) ou, enquanto não houver, o descritivo do catálogo.
+    """
+    g = next((g for g in GRAFICOS if g["id"] == id_grafico), None)
+    if g is None:
+        st.subheader(TITULOS_ACHADO.get(id_grafico) or "Gráfico exploratório")
+        autoria(autor_pendente)
         pendente(f"Gráfico `{id_grafico}` ainda não foi feito.")
         return
-    grafico(figura(id_grafico, modo))
+    st.subheader(TITULOS_ACHADO.get(id_grafico) or g["secao"])
+    autoria(f"{g['tipo'].capitalize()} · {g['autor']}")
+    try:
+        grafico(figura(id_grafico, modo, f))
+    except SemDados:
+        st.warning(f"Nenhum gênero deste gráfico tem ao menos {f.min_filmes} filmes no recorte. "
+                   "Afrouxe os filtros na barra lateral.", icon=":material/filter_alt_off:")
+        return
+    if id_grafico == "p1_exploratorio" and f.orcamento is not None:
+        st.caption("O filtro de orçamento não se aplica a este gráfico: ele mede justamente quantos filmes "
+                   "têm orçamento e receita informados.")
     if id_grafico in NOTAS:
         nota(NOTAS[id_grafico])
     else:
@@ -77,11 +259,25 @@ def pagina_inicio() -> None:
     df = base_tratada()
     ret = df["retorno"].dropna()
 
+    # 1. pergunta
     st.title("Orçamento maior dá retorno maior?")
     st.markdown(f"**Pergunta de pesquisa.** {PERGUNTA}  \n**Público-alvo.** {PUBLICO}.")
-    st.caption("Base: TMDB 5000 Movie Dataset, após o tratamento descrito na página *Dados e tratamento*. "
-               "Retorno = receita ÷ orçamento (não é lucro: não inclui marketing nem a parte dos cinemas).")
 
+    # 2. resposta em destaque (versão curta; a completa fica no fim da Explicação)
+    with st.container(border=True, key="resposta"):
+        st.markdown("**Resposta**")
+        if RESPOSTA_CURTA:
+            st.markdown(RESPOSTA_CURTA.replace("$", "\\$"))  # "$" sozinho vira fórmula no Markdown
+            st.page_link(PAGINAS["explicacao"], label="Ver a resposta completa e os gráficos que a sustentam",
+                         icon=":material/arrow_forward:")
+        else:
+            st.markdown(RESPOSTA_PERGUNTA.replace("$", "\\$"))
+    if not RESPOSTA_CURTA:
+        pendente("Versão curta da resposta (2 ou 3 linhas) para este destaque: `RESPOSTA_CURTA` em notas.py. "
+                 "Quando ela existir, a resposta completa passa a aparecer só no fim da página Explicação.")
+
+    # 3. os números que sustentam a resposta
+    st.subheader("Os números da base")
     c1, c2, c3, c4 = st.columns(4)
     with c1:
         card("Retorno mediano", fmt_mult(ret.median()), destaque=True,
@@ -95,56 +291,112 @@ def pagina_inicio() -> None:
     with c4:
         card("Orçamento mediano", fmt_usd(df.loc[ret.index, "budget"].median()),
              ajuda="Entre os filmes com retorno calculável.")
+    st.caption("Base: TMDB 5000 Movie Dataset, após o tratamento descrito em *Dados e tratamento*. "
+               "Retorno = receita ÷ orçamento (não é lucro: não inclui marketing nem a parte dos cinemas).")
 
-    st.subheader("Resposta à pergunta")
-    with st.container(border=True):
-        st.markdown(RESPOSTA_PERGUNTA.replace("$", "\\$"))  # "$" sozinho vira fórmula no Markdown
-
-    st.subheader("Como ler este dashboard")
-    st.markdown(
-        "- **Exploração**: gráficos exploratórios, para ver como orçamento e retorno se distribuem em cada gênero.\n"
-        "- **Explicação**: gráficos explanatórios e o storytelling, que respondem à pergunta.\n"
-        "- **Dados e tratamento**: o que foi feito com faltantes e valores implausíveis antes da análise.\n"
-        "- **Parte Comum**: agrupamento K-Means do Wine Quality.\n\n"
-        "Passe o mouse sobre os gráficos para ver os valores; arraste para dar zoom e clique duas vezes para voltar."
-    )
+    # 4. para onde ir (a explicação de cada página já é o link para ela)
+    st.subheader("Para onde ir")
+    destinos = [
+        ("explicacao", "Os gráficos que respondem à pergunta, o storytelling para decisão e a resposta completa."),
+        ("exploracao", "Como orçamento e retorno se distribuem dentro de cada gênero, com filtros."),
+        ("decadas", "Animação década a década, com troca de métrica (retorno, lucro, receita) e de escala."),
+        ("dados", "O que foi feito com faltantes e valores implausíveis antes da análise."),
+        ("parte-comum", "Parte Comum: agrupamento K-Means do Wine Quality."),
+    ]
+    for linha in (destinos[:3], destinos[3:]):
+        for col, (chave, texto) in zip(st.columns(3), linha):
+            with col, st.container(border=True, key=f"ir_{chave.replace('-', '_')}", height="stretch"):
+                st.page_link(PAGINAS[chave])
+                st.caption(texto)
+    st.caption("Nos gráficos: passe o mouse para ver os valores; arraste para dar zoom e clique duas vezes para voltar.")
 
 
 def pagina_exploracao() -> None:
+    f = barra_filtros()
     st.title("Exploração")
     st.caption("Gráficos exploratórios: como orçamento e retorno se distribuem dentro de cada gênero.")
+    aviso_recorte(f)
+    kpis_recorte(f)
 
-    st.subheader("Pessoa 1")
-    mostrar("p1_exploratorio")
-
-    st.subheader("Pessoa 2")
-    autoria("Dispersão de orçamento e retorno em quatro gêneros.")
-    mostrar("p2_exploratorio")
-
-    st.subheader("Pessoa 3")
-    autoria("Concentração de filmes por região de orçamento e retorno em seis gêneros.")
-    mostrar("p3_exploratorio")
-
-    st.subheader("Pessoa 4")
-    mostrar("p4_exploratorio")
+    # um gráfico por vez: a página fica curta e só monta o gráfico escolhido
+    opcoes = {g["id"]: g["curto"] for g in GRAFICOS if g["tipo"] == "exploratório"}
+    opcoes.setdefault("p4_exploratorio", "Pessoa 4 (pendente)")
+    escolhido = st.segmented_control("Gráfico", list(opcoes), format_func=opcoes.get, key="v_exploratorio",
+                                     required=True, default=_salvo("v_exploratorio", next(iter(opcoes))),
+                                     on_change=_salvar, args=("v_exploratorio",), label_visibility="collapsed")
+    mostrar(escolhido, f, autor_pendente="Exploratório · Pessoa 4")
 
 
 def pagina_explicacao() -> None:
+    f = barra_filtros()
     st.title("Explicação")
     st.caption("Gráficos explanatórios: o que responde à pergunta de pesquisa.")
+    aviso_recorte(f)
+    kpis_recorte(f)
 
-    st.subheader("Retorno por faixa de orçamento — Pessoa 2")
-    mostrar("p2_explanatorio")
-
-    st.subheader("Associação entre orçamento e retorno — Pessoa 3")
-    mostrar("p3_explanatorio")
+    mostrar("p2_explanatorio", f)
+    mostrar("p3_explanatorio", f)
 
     st.subheader("Storytelling para decisão")
     with st.container(border=True):
         st.markdown(STORYTELLING_P3)
 
+    st.subheader("Resposta completa à pergunta", anchor="resposta")
+    st.caption(f"{PERGUNTA} Calculada sobre a base inteira, sem os filtros da barra lateral.")
+    with st.container(border=True):
+        st.markdown(RESPOSTA_PERGUNTA.replace("$", "\\$"))  # "$" sozinho vira fórmula no Markdown
+
+
+@st.cache_data(show_spinner="Montando a animação…")
+def figura_decadas(modo: str, f: Filtros, metrica: str, escala: str):
+    return animacao_decadas(base_filtrada(f.orcamento, f.anos), modo=modo, generos=f.generos,
+                            metrica=metrica, escala=escala)
+
+
+def _metrica_mudou() -> None:
+    _salvar("v_metrica")
+    # lucro só existe em escala linear: o controle de escala é recriado mostrando isso
+    if st.session_state["v_metrica"] == "lucro":
+        st.session_state["_v_escala"] = "linear"
+        st.session_state.pop("v_escala", None)
+
+
+def pagina_decadas() -> None:
+    f = barra_filtros()
+    st.title("Década a década")
+    st.caption("Como orçamento e retorno mudaram ao longo do tempo. Aperte **▶ Animar** ou arraste o controle de "
+               "décadas; passe o mouse sobre um ponto para ver o filme. Respeita os filtros de gênero, orçamento e ano "
+               f"da barra lateral (o mínimo de filmes por gênero não se aplica aqui; décadas com menos de "
+               f"{MIN_FILMES_DECADA} filmes ficam de fora).")
+    c1, c2, _ = st.columns([3, 2, 3])
+    with c1:
+        metrica = st.segmented_control("Eixo vertical", list(METRICAS), key="v_metrica", required=True,
+                                       default=_salvo("v_metrica", "retorno"),
+                                       on_change=_metrica_mudou,
+                                       format_func=lambda k: {"retorno": "Retorno (×)", "lucro": "Lucro bruto (US$)",
+                                                              "receita": "Receita (US$)"}[k],
+                                       help="Lucro bruto = receita − orçamento (não inclui marketing nem a parte "
+                                            "dos cinemas). Os mesmos filmes entram nas três métricas.")
+    with c2:
+        escala = st.segmented_control("Escala dos eixos", list(ESCALAS), key="v_escala", required=True,
+                                      default=_salvo("v_escala", "log"), on_change=_salvar, args=("v_escala",),
+                                      format_func=ESCALAS.get, disabled=metrica == "lucro",
+                                      help="Logarítmica: cada marca vale 10 vezes a anterior, bom para valores que "
+                                           "variam muito. Linear: distâncias iguais para diferenças iguais. "
+                                           "Lucro pode ser negativo, então usa sempre a linear.")
+    if metrica == "lucro":
+        st.caption("Lucro pode ser negativo e não existe log de número negativo: este eixo usa escala linear.")
+    try:
+        grafico(figura_decadas(modo, f, metrica, escala), config={"displayModeBar": False})
+    except SemDados:
+        st.warning(f"O recorte deixou menos de duas décadas com ao menos {MIN_FILMES_DECADA} filmes. "
+                   "Afrouxe os filtros na barra lateral.", icon=":material/filter_alt_off:")
+    st.caption("Orçamento e receita estão em dólares da época (o TMDB não corrige pela inflação), então parte da "
+               "subida do orçamento ao longo das décadas é inflação.")
+
 
 def pagina_dados() -> None:
+    f = barra_filtros()
     bruto, df = base_bruta(), base_tratada()
     st.title("Dados e tratamento")
     st.caption("Justificativas completas no eda.ipynb (seções 2 a 4). Aqui fica o resumo do que mudou.")
@@ -153,7 +405,11 @@ def pagina_dados() -> None:
     with c1:
         card("Filmes no arquivo original", _br(len(bruto), 0))
     with c2:
-        card("Filmes após o tratamento", _br(len(df), 0))
+        removidos = len(bruto) - len(df)
+        card("Filmes após o tratamento", _br(len(df), 0), delta=f"-{_br(removidos, 0)} "
+             f"{'removido' if removidos == 1 else 'removidos'}", cor_delta="off",
+             ajuda="Linhas removidas pelo tratamento (ver DECISOES abaixo). Os demais problemas viraram NaN, "
+                   "sem remover o filme.")
     with c3:
         card("Com retorno calculável", _br(df["retorno"].notna().sum(), 0), destaque=True)
 
@@ -176,8 +432,12 @@ def pagina_dados() -> None:
                  hide_index=True, width="stretch")
 
     st.subheader("Base tratada")
+    recorte = filmes_do_recorte(f)
+    if f.ativo:
+        st.caption(f"Recorte da barra lateral: {_br(len(recorte), 0)} de {_br(len(df), 0)} filmes "
+                   "(com algum dos gêneros escolhidos). O mínimo de filmes por gênero só vale para os gráficos.")
     colunas_base = ["title", "ano", "genres", "budget", "revenue", "retorno", "runtime", "vote_average"]
-    st.dataframe(df[colunas_base], hide_index=True, width="stretch", height=360,
+    st.dataframe(recorte[colunas_base], hide_index=True, width="stretch", height=360,
                  column_config={"budget": st.column_config.NumberColumn("budget (US$)", format="%,d"),
                                 "revenue": st.column_config.NumberColumn("revenue (US$)", format="%,d"),
                                 "retorno": st.column_config.NumberColumn("retorno (×)", format="%.2f"),
@@ -242,15 +502,23 @@ def pagina_parte_comum() -> None:
 # ==========================================================================================
 # Navegação
 # ==========================================================================================
-paginas = {
-    "Parte Específica — TMDB 5000": [
-        st.Page(pagina_inicio, title="Início", icon=":material/home:", default=True),
-        st.Page(pagina_exploracao, title="Exploração", icon=":material/travel_explore:", url_path="exploracao"),
-        st.Page(pagina_explicacao, title="Explicação", icon=":material/insights:", url_path="explicacao"),
-        st.Page(pagina_dados, title="Dados e tratamento", icon=":material/table_chart:", url_path="dados"),
-    ],
-    "Parte Comum": [
-        st.Page(pagina_parte_comum, title="Wine Quality", icon=":material/wine_bar:", url_path="parte-comum"),
-    ],
+PAGINAS = {  # por url_path; o Início usa estes objetos nos st.page_link
+    "inicio": st.Page(pagina_inicio, title="Início", icon=":material/home:", default=True),
+    "exploracao": st.Page(pagina_exploracao, title="Exploração", icon=":material/travel_explore:", url_path="exploracao"),
+    "explicacao": st.Page(pagina_explicacao, title="Explicação", icon=":material/insights:", url_path="explicacao"),
+    "decadas": st.Page(pagina_decadas, title="Década a década", icon=":material/animation:", url_path="decadas"),
+    "dados": st.Page(pagina_dados, title="Dados e tratamento", icon=":material/table_chart:", url_path="dados"),
+    "parte-comum": st.Page(pagina_parte_comum, title="Wine Quality", icon=":material/wine_bar:", url_path="parte-comum"),
 }
-st.navigation(paginas).run()
+navegacao = st.navigation({
+    "Parte Específica — TMDB 5000": [PAGINAS[k] for k in ["inicio", "exploracao", "explicacao", "decadas", "dados"]],
+    "Parte Comum": [PAGINAS["parte-comum"]],
+})
+navegacao.run()
+
+# rodapé da barra lateral (depois da página, para ficar abaixo dos filtros). O Streamlit não deixa trocar o
+# tema pelo Python (só pelo menu), então em vez de um botão que não funcionaria fica o caminho até ele.
+with st.sidebar:
+    st.divider()
+    st.caption(f":material/{'dark_mode' if modo == 'escuro' else 'light_mode'}: **Tema {modo}.** "
+               "Para trocar: menu **⋮** no canto superior direito → *Settings* → *Theme*.")

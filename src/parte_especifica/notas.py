@@ -26,3 +26,27 @@ STORYTELLING_P3 = '**Público-alvo.** Gestores de estúdio ou produtora, conform
 
 # Resposta à pergunta de pesquisa (eda.ipynb, última seção), em Markdown.
 RESPOSTA_PERGUNTA = '**1. Orçamento maior significa retorno maior?**\n\nNão de forma simples. Considerando os 3.210 filmes com retorno calculável, a correlação de Spearman entre orçamento e retorno é de −0,136. É uma relação fraca e levemente negativa: filmes com orçamento mais alto tendem a vir com retorno um pouco menor. Separando por faixas, a relação também não é linear e forma um "U". Os filmes de até US$ 20M (mediana de 2,88×) e os acima de US$ 100M (2,76×) superam as duas faixas do meio, que ficam em 1,99× cada.\n\nA diferença mais clara está na chance de a receita não cobrir o orçamento, e não no multiplicador. Acima de US$ 100M, só 7,9% dos filmes têm receita abaixo do orçamento. Nas outras faixas, isso acontece com cerca de um em cada quatro (23% a 28%). Vale lembrar que filmes desse porte quase sempre divulgam a bilheteria, então essa faixa sofre menos com dados faltantes do que as outras.\n\n**2. Isso varia por gênero?**\n\nSim.\n\n- Em Romance (−0,169), Drama (−0,165), Suspense (−0,134) e Comédia (−0,104), a correlação é negativa e fraca, com o intervalo todo abaixo de zero. Nesses gêneros, filmes mais caros tendem a render proporcionalmente um pouco menos.\n- Em Ação (0,041) e Aventura (0,028), a correlação fica perto de zero e o intervalo inclui o zero. Não há evidência de relação monotônica.\n- Por faixa, o "U" aparece nos quatro gêneros comparados (ação, aventura, comédia e drama), e com mais força em Aventura: o retorno mediano cai de 3,44× (até US$ 20M) para 1,89× (US$ 50–100M) e volta a 2,86× acima disso. Nas faixas intermediárias, Comédia é o gênero com a maior mediana (2,21× e 2,14×).\n- A correlação negativa e o "U" não se contradizem. A correlação reflete a maioria dos filmes, que está nas faixas mais baratas. A faixa acima de US$ 100M tem poucos filmes de alguns gêneros e pesa pouco nela.\n- Há uma ressalva de amostra: acima de US$ 100M existem só 48 dramas e 59 comédias, e até US$ 20M só 135 filmes de aventura. Nessas combinações as medianas são instáveis.\n\n**3. O que um gestor de estúdio deve levar em conta**\n\n- **Orçamento não é alavanca de retorno.** Investir mais não multiplica o retorno. O que os dados mostram é que filmes acima de US$ 100M raramente arrecadam menos do que custaram.\n- **O gênero pesa na decisão.** Em drama, romance, suspense e comédia, gastar mais não vem acompanhado de retorno proporcionalmente maior; a associação é negativa, embora fraca. Em ação e aventura, o orçamento sozinho não explica o retorno, e a decisão precisa se apoiar em outros fatores.\n- **A faixa intermediária (US$ 20–100M) foi a menos eficiente no geral**, com as medianas mais baixas. Entre os gêneros, comédia é a que se sai melhor nessa faixa.\n\n**Cuidados de leitura**\n\n- Retorno é receita ÷ orçamento, e não lucro. Como marketing e a parte dos cinemas ficam de fora, 1× não significa empatar.\n- O orçamento está no denominador do retorno. Por construção, orçamentos maiores puxam o retorno para baixo, então parte da correlação negativa é matemática, não um efeito real.\n- Os filmes pequenos e obscuros são os que mais faltam na base (MAR), então a mediana alta da faixa até US$ 20M pode estar otimista.\n- É uma associação, não causalidade.\n- Um mesmo filme conta em vários gêneros, então os gêneros não são independentes.'
+
+
+# ==========================================================================================
+# Campos para o grupo preencher (o dashboard já está preparado para eles)
+# ==========================================================================================
+# Versão curta da resposta (2 ou 3 linhas) para o destaque do Início. A completa (RESPOSTA_PERGUNTA)
+# fica no fim da página Explicação. Enquanto estiver vazia, o Início mostra a resposta completa.
+RESPOSTA_CURTA = (
+    "Orçamento maior não traz retorno maior: a correlação é fraca e levemente negativa (Spearman −0,136). "
+    "O orçamento alto vem associado a menos risco: acima de US$ 100M, só 7,9% dos filmes arrecadam menos do que "
+    "custaram, contra cerca de 1 em 4 nas demais faixas. O padrão muda por gênero: em drama, romance, suspense e "
+    "comédia, filmes mais caros tendem a render proporcionalmente menos; em ação e aventura, não há relação clara."
+)
+
+# Título de cada gráfico no dashboard, dizendo o ACHADO (ex.: "Filmes caros raramente dão prejuízo").
+# Escrito pelo autor do gráfico. Vazio = o dashboard usa um título descritivo neutro.
+TITULOS_ACHADO = {
+    "p1_exploratorio": "",
+    "p2_exploratorio": "",
+    "p3_exploratorio": "",
+    "p4_exploratorio": "",
+    "p2_explanatorio": "",
+    "p3_explanatorio": "",
+}

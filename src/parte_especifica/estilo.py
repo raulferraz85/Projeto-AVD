@@ -387,6 +387,12 @@ def injetar_css() -> None:
             background: {c["destaque_fundo"]}; border-color: transparent;
         }}
         [class*="st-key-destaque"] [data-testid="stMetricValue"] {{ color: {c["destaque_texto"]}; }}
+        /* [IA] Claude Code – bloco de resposta em destaque (Início) e cards de navegação */
+        [class*="st-key-resposta"] {{
+            background: {c["destaque_fundo"]}; border-color: transparent !important; padding: 1.25rem 1.5rem;
+        }}
+        [class*="st-key-resposta"] p {{ font-size: 1.05rem; line-height: 1.6; }}
+        [class*="st-key-ir_"] {{ background: {c["cartao"]}; }}
         [data-testid="stPlotlyChart"] {{
             background: {c["cartao"]}; border: 1px solid {c["linha"]};
             border-radius: 0.75rem; padding: 0.5rem; overflow: hidden;
@@ -406,10 +412,13 @@ def injetar_css() -> None:
     sincronizar_tema()
 
 
-def card(rotulo: str, valor: str, destaque: bool = False, ajuda: str | None = None, chave: str | None = None) -> None:
+def card(rotulo: str, valor: str, destaque: bool = False, ajuda: str | None = None, chave: str | None = None,
+         delta: str | None = None, cor_delta: str = "normal", seta: str = "auto", descricao_delta: str | None = None) -> None:
     """Card de número. destaque=True usa o fundo azul claro (só no número principal da página).
 
     `chave` só é necessária se dois cards na mesma página tiverem o mesmo rótulo.
+    `delta` (ex.: "+0,30×") aparece embaixo do número; cor_delta: "normal" (subir é bom), "inverse" (subir é ruim)
+    ou "off" (neutro); seta: "auto", "up", "down" ou "off".
     """
     import re
 
@@ -417,7 +426,9 @@ def card(rotulo: str, valor: str, destaque: bool = False, ajuda: str | None = No
 
     sufixo = chave or re.sub(r"\W+", "_", rotulo.lower()).strip("_")
     with st.container(key=f"{'destaque' if destaque else 'card'}_{sufixo}"):
-        st.metric(rotulo, valor, help=ajuda)
+        # [IA] Claude Code – delta opcional (comparação do recorte com a base inteira)
+        st.metric(rotulo, valor, delta=delta, delta_color=cor_delta, delta_arrow=seta,
+                  delta_description=descricao_delta if delta else None, help=ajuda)
 
 
 def grafico(fig: go.Figure, **kw) -> None:
