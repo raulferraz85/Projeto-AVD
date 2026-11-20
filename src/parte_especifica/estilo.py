@@ -420,11 +420,14 @@ def grafico(fig: go.Figure, **kw) -> None:
     """Mostra a figura no Streamlit com o tema do projeto (e não o tema padrão do Streamlit)."""
     import streamlit as st
 
-    st.plotly_chart(fig, theme=None, use_container_width=True, **kw)
+    st.plotly_chart(fig, theme=None, width="stretch", **kw)
 
 
 def nota(texto: str) -> None:
     """Nota analítica embaixo do gráfico, no estilo do projeto."""
+    import re
+
     import streamlit as st
 
+    texto = re.sub(r"`([^`]+)`", r"<code>\1</code>", texto)  # `código` do Markdown dentro do HTML
     st.markdown(f'<div class="nota-analitica">{texto}</div>', unsafe_allow_html=True)
