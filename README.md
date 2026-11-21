@@ -13,9 +13,9 @@ Entregáveis: este repositório, o `relatorio.pdf` e o dashboard em Streamlit.
 
 | Papel | Nome | Responsabilidades |
 |---|---|---|
-| Pessoa 1 | _(preencher)_ | Dados e tratamento, identidade visual, fechamento (relatório, slides, README) |
-| Pessoa 2 | _(preencher)_ | EDA distribucional, gráficos exploratório e explanatório, resposta à pergunta |
-| Pessoa 3 | _(preencher)_ | EDA relacional, gráficos exploratório e explanatório, storytelling |
+| Pessoa 1 | Julia Maria Santos Teixeira | Dados e tratamento, identidade visual, fechamento (relatório, slides, README) |
+| Pessoa 2 | Raul Vitor Ferraz Silva | EDA distribucional, gráficos exploratório e explanatório, resposta à pergunta |
+| Pessoa 3 | Lucas Rodrigues Campos | EDA relacional, gráficos exploratório e explanatório, storytelling |
 | Pessoa 4 | _(preencher)_ | Estrutura do dashboard, página da Parte Comum, gráfico exploratório |
 
 ## Como rodar
@@ -41,7 +41,7 @@ Para alternar entre claro e escuro: menu ⋮ → Settings → Theme.
 python src/parte_comum/eda.py            # EDA
 python src/parte_comum/kmeans.py         # padronização + K-Means (passadas 1 e 2) + métricas
 python src/parte_comum/granularidade.py  # apoio à discussão crítica
-python src/parte_comum/relatorio.py      # gera relatorio.pdf
+python src/parte_comum/relatorio.py      # gera relatorio.pdf (Parte Comum + Parte Específica)
 ```
 
 **Parte Específica:** abrir `src/parte_especifica/eda.ipynb` e executar todas as células.
@@ -58,7 +58,7 @@ Os pacotes de Jupyter do `requirements.txt` servem apenas para abrir e executar 
 | `data/parte_especifica/` | CSVs do TMDB 5000 (`movies`, `credits`) e `baixar_dados.py` |
 | `src/parte_comum/` | `common.py` (carga e estilo), `eda.py`, `kmeans.py`, `metricas.py`, `granularidade.py`, `relatorio.py`, `estatistica.py` (testes sem scipy), `pdf_simples.py` |
 | `notebooks/parte_comum/` | `eda.ipynb`, `kmeans_metricas.ipynb` (já executados) |
-| `src/parte_especifica/` | `eda.ipynb`, `dados.py`, `estilo.py`, `graficos.py`, `notas.py`, `dashboard.py`, `vitrine_estilo.py` |
+| `src/parte_especifica/` | `eda.ipynb`, `dados.py`, `estilo.py`, `graficos.py`, `notas.py`, `dashboard.py`, `relatorio_especifica.py` (seção 7 do relatório), `vitrine_estilo.py` |
 | `.streamlit/config.toml` | tema do dashboard (cores e fontes da identidade visual) |
 | `out/` | figuras e tabelas geradas |
 | `docs/` | declaração de uso de IA |
@@ -132,7 +132,7 @@ receita não cobrir o custo: 7,9 % acima de US$ 100M, contra cerca de um em cada
 **Varia por gênero.** A associação é negativa e fraca em romance, drama, suspense e comédia, e próxima de zero em ação
 e aventura. Retorno não é lucro, e parte da correlação negativa vem de o orçamento estar no denominador do retorno.
 
-Texto completo, com as ressalvas, no fim do `eda.ipynb` e na página Início do dashboard.
+Texto completo, com as ressalvas, no fim do `eda.ipynb`, na seção 7.10 do `relatorio.pdf` e no fim da página Explicação do dashboard. O Início mostra a versão curta (`RESPOSTA_CURTA` em `notas.py`).
 
 ### Storytelling
 
@@ -144,11 +144,19 @@ _(resumo pendente — o texto completo da Pessoa 3 está no `eda.ipynb`, seção
 
 | Página | Conteúdo |
 |---|---|
-| Início | pergunta, público-alvo e números gerais da base |
-| Exploração | gráficos exploratórios com notas |
-| Explicação | gráficos explanatórios e storytelling |
-| Dados e tratamento | faltantes, valores implausíveis e decisões de tratamento |
+| Início | pergunta, resposta curta em destaque, números da base e cards de navegação |
+| Exploração | gráficos exploratórios (um por vez) com notas e indicadores do recorte |
+| Explicação | gráficos explanatórios, storytelling e resposta completa |
+| Década a década | animação do percurso das medianas por década, com troca de métrica (retorno, lucro bruto, receita) e de escala (log, linear) |
+| Dados e tratamento | faltantes, valores implausíveis, decisões de tratamento e a base tratada |
 | Parte Comum | resultados do K-Means no Wine Quality |
+
+**Filtros:** a barra lateral das páginas Exploração, Explicação, Década a década e Dados filtra por gênero, faixa de orçamento,
+ano de lançamento e mínimo de filmes por gênero. Os cards de indicadores comparam o recorte com a base inteira, e a página avisa
+quando há filtro ativo, já que as notas e o storytelling descrevem a base inteira.
+
+**Títulos dos gráficos:** cada autor escreve o achado do seu gráfico em `TITULOS_ACHADO` (`notas.py`); enquanto estiver vazio,
+o dashboard usa um título descritivo.
 
 **Identidade visual:** a paleta, as fontes e o formato brasileiro dos números estão em `estilo.py` (`aplicar_estilo(fig)`) e em `.streamlit/config.toml`.
 Cada gênero tem uma cor fixa em todos os gráficos. Para ver os componentes com dados fictícios: `streamlit run src/parte_especifica/vitrine_estilo.py`.
@@ -185,11 +193,12 @@ _(preencher com P = principal, A = apoio)_
 
 ## Pendências
 
-- [ ] Nomes dos integrantes (aqui e na capa do relatório)
+- [x] Nomes dos integrantes (aqui e na capa do relatório)
 - [ ] Gráfico exploratório e nota da Pessoa 4
 - [x] Resposta à pergunta (resumo aqui)
 - [ ] Resumo do storytelling aqui
 - [ ] Matriz de contribuição
 - [ ] `docs/DECLARACAO_IA.pdf` assinada por todos
-- [ ] `relatorio.pdf` com a Parte Específica
+- [ ] `relatorio.pdf`: preencher os trechos marcados **[PREENCHER]** na seção 7 (textos em `TEXTOS`, `src/parte_especifica/relatorio_especifica.py`) e os nomes na capa
+- [ ] Títulos-achado dos gráficos (`TITULOS_ACHADO` em `notas.py`), cada autor o seu
 - [ ] Slides da apresentação (03/12)

@@ -1,16 +1,21 @@
 """Gera relatorio.pdf (Parte Comum) a partir das tabelas/figuras já salvas em out/parte_comum/.
 
 Uso (depois de rodar eda.py, kmeans.py e granularidade.py):  python src/parte_comum/relatorio.py
-A seção 7 inclui a resposta à pergunta de pesquisa da Parte Específica.
+A seção 7 (Parte Específica, TMDB 5000) vem de src/parte_especifica/relatorio_especifica.py.
 """
 from __future__ import annotations
 
 import json
+import sys
 
 import pandas as pd
 
 from common import OUT_DIR, RAIZ
 from pdf_simples import DocumentoPDF, Espaco, Estilo, Imagem, Paragrafo, QuebraPagina, Tabela
+
+sys.path.insert(0, str(RAIZ / "src" / "parte_especifica"))
+import relatorio_especifica  # noqa: E402  (seção 7)
+from notas import RESPOSTA_CURTA  # noqa: E402
 
 # [IA] Claude Code – troca do reportlab/PIL pelo gerador em pdf_simples.py (só matplotlib)
 cm = 1  # larguras passadas em centímetros
@@ -68,15 +73,18 @@ def montar() -> list:
     s = []
 
     # ---------------------------------------------------------------- capa
-    s += [Spacer(1, 90), P("Análise Exploratória e Agrupamento (K-Means)<br/>sobre o Wine Quality", TIT),
-          P("Parte Comum — Análise e Visualização de Dados (AVD)", SUB), Spacer(1, 14),
+    s += [Spacer(1, 90), P("Análise Exploratória de Dados: agrupamento de vinhos<br/>e orçamento × retorno no cinema", TIT),
+          P("Parte Comum (Wine Quality) e Parte Específica (TMDB 5000) — Análise e Visualização de Dados (AVD)", SUB), Spacer(1, 14),
           P("Dataset: UCI Wine Quality (vinho tinto + branco, <i>Vinho Verde</i>) — archive.ics.uci.edu/dataset/186", SUB),
-          P("Integrantes: <i>[preencher nomes do grupo]</i>", SUB), Spacer(1, 40),
+          P("Dataset: TMDB 5000 Movie Dataset (Kaggle) — kaggle.com/datasets/tmdb/tmdb-movie-metadata", SUB),
+          P("Integrantes: Raul Vitor Ferraz Silva, Lucas Rodrigues Campos e Julia Maria Santos Teixeira", SUB), Spacer(1, 40),
           P("<b>Resumo.</b> Exploramos os 6 497 vinhos nos quatro pilares da EDA, padronizamos as 11 variáveis físico-químicas e aplicamos "
             "o K-Means em duas passadas (k livre pelo cotovelo e k = 7 classes). Em ambas, a acurácia dos grupos em relação à nota de "
             f"qualidade ({p1['acuracia_global']:.1%} e {p2['acuracia_global']:.1%}) é praticamente igual à de um classificador trivial que "
             f"sempre responde “nota 6” ({p1['baseline_classe_majoritaria']:.1%}). Os clusters descobertos refletem principalmente o tipo de vinho "
             "(tinto × branco) e perfis químicos, e não a nota sensorial: as notas vizinhas não são separáveis pelos dados.", CORPO),
+          P("<b>Parte Específica (TMDB 5000).</b> " + relatorio_especifica._inline(RESPOSTA_CURTA), CORPO) if RESPOSTA_CURTA
+          else P("<i>[PREENCHER — resumo da Parte Específica]</i>", CORPO.com(cor="#B83A7A")),
           PageBreak()]
 
     # ---------------------------------------------------------------- 1. dados + EDA
@@ -227,25 +235,20 @@ def montar() -> list:
             "Limitações: resultados dependem da inicialização (usamos n_init = 20 e semente fixa); o K-Means pressupõe grupos esféricos de variância parecida; "
             "o mapeamento por maioria pode associar vários clusters à mesma classe e deixar outras sem representante."),
           PageBreak(),
-          P("7. Parte Específica: TMDB 5000", H1),
-          P("7.1 Resposta à pergunta de pesquisa", H2),
-          P("<b>Filmes com orçamento maior têm retorno maior, ou isso varia por gênero?</b>"),
-          P("Na amostra analisada, orçamentos maiores nem sempre vieram acompanhados de retornos proporcionais maiores. "
-            "O gráfico exploratório mostra filmes com orçamentos parecidos e retornos bastante diferentes. No gráfico "
-            "explanatório, aventura teve seu maior retorno mediano na menor faixa de orçamento, enquanto comédia "
-            "apresentou resultados mais equilibrados entre as faixas. O padrão variou conforme o gênero e a faixa de orçamento."),
-          P("Uma limitação é que a medida de retorno se restringe à razão entre receita e orçamento."),
+          *relatorio_especifica.montar(P, H1, H2, CORPO, LEG, img, tabela),
           P("8. Uso de IA e referências", H1),
-          P("O uso de ferramentas de IA generativa neste trabalho está declarado em docs/DECLARACAO_IA.pdf (assinada pelos integrantes). "
-            "Dados: P. Cortez, A. Cerdeira, F. Almeida, T. Matos, J. Reis. <i>Modeling wine preferences by data mining from physicochemical properties.</i> Decision Support Systems, 47(4):547–553, 2009. "
-            "Software: Python 3, pandas, NumPy, scikit-learn, seaborn, matplotlib.")]
+          P("O uso de ferramentas de IA generativa neste trabalho está declarado em docs/DECLARACAO_IA.pdf (assinada pelos integrantes)."),
+          # referências alinhadas à esquerda: a URL longa abre buracos no texto justificado
+          P("• P. Cortez, A. Cerdeira, F. Almeida, T. Matos, J. Reis. <i>Modeling wine preferences by data mining from physicochemical properties.</i> Decision Support Systems, 47(4):547–553, 2009.", CORPO.com(alinhamento="left")),
+          P("• TMDB 5000 Movie Dataset, Kaggle — kaggle.com/datasets/tmdb/tmdb-movie-metadata (dados de The Movie Database, TMDB).", CORPO.com(alinhamento="left")),
+          P("• Software: Python 3, pandas, NumPy, scikit-learn, seaborn, matplotlib, plotly, Streamlit.", CORPO.com(alinhamento="left"))]
     return s
 
 
 def main() -> None:
     destino = RAIZ / "relatorio.pdf"
-    doc = DocumentoPDF(destino, titulo="Relatório AVD — Wine Quality (Parte Comum)",
-                       rodape="AVD — Wine Quality (Parte Comum)")
+    doc = DocumentoPDF(destino, titulo="Análise Exploratória de Dados: agrupamento de vinhos e orçamento × retorno no cinema",
+                       rodape="AVD — Wine Quality (Parte Comum) · TMDB 5000 (Parte Específica)")
     doc.construir(montar())
     print("Relatório gerado:", destino)
 
