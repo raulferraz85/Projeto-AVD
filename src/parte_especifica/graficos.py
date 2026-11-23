@@ -310,9 +310,9 @@ def p3_explanatorio_spearman(df: pd.DataFrame, modo: str | None = None, generos=
 
 
 # ==========================================================================================
-# Pessoa 4 — exploratório: distribuição do retorno por gênero (violino) e parcela abaixo de 1×
+# Pessoa 2 — exploratório (violino): distribuição do retorno por gênero (violino) e parcela abaixo de 1×
 # ==========================================================================================
-# [IA] Claude Code – implementação em plotly do violino escolhido pela Pessoa 4 (tipo de gráfico, variáveis e objetivo são do grupo)
+# [IA] Claude Code – implementação em plotly do violino escolhido pelo grupo (tipo de gráfico, variáveis e objetivo são do grupo)
 def p4_tabela_violino(df: pd.DataFrame, generos=None, min_filmes: int = MIN_FILMES_GENERO) -> pd.DataFrame:
     """Filmes com retorno e % com retorno < 1× (receita menor que o orçamento) por gênero, do maior % ao menor."""
     base = explodir(df.loc[df["retorno"].gt(0), ["id", "retorno", "genres"]], "genres").dropna(subset=["genres"])
@@ -380,7 +380,7 @@ GRAFICOS = [
      "secao": "Orçamento e retorno de cada filme, em quatro gêneros", "curto": "Dispersão por gênero"},
     {"id": "p3_exploratorio", "tipo": "exploratório", "autor": "Pessoa 3", "funcao": p3_exploratorio_densidade,
      "secao": "Onde os filmes se concentram em orçamento e retorno, em seis gêneros", "curto": "Concentração por gênero"},
-    {"id": "p4_exploratorio", "tipo": "exploratório", "autor": "Pessoa 4", "funcao": p4_exploratorio_violino,
+    {"id": "p4_exploratorio", "tipo": "exploratório", "autor": "Pessoa 2", "funcao": p4_exploratorio_violino,
      "secao": "Distribuição do retorno por gênero e parcela de filmes abaixo de 1×", "curto": "Violino por gênero"},
     {"id": "p2_explanatorio", "tipo": "explanatório", "autor": "Pessoa 2", "funcao": p2_explanatorio_faixas,
      "secao": "Retorno mediano por faixa de orçamento e gênero", "curto": "Retorno por faixa"},

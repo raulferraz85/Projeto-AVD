@@ -17,7 +17,16 @@ NOTAS = {
         'Cada ponto representa um filme e mostra seu orçamento e o retorno obtido. A maior concentração está entre US$ 10 milhões e US$ 100 milhões de orçamento, com retornos entre cerca de 1 e 10 vezes o orçamento. Os filmes de drama aparecem mais espalhados, principalmente entre os orçamentos menores, enquanto ação e aventura se concentram mais nos orçamentos altos. Os quatro painéis usam a mesma escala e os mesmos limites nos eixos, o que facilita comparar os gêneros.'
     ),
     "p4_exploratorio": (
-        'O gráfico mostra a distribuição do retorno financeiro por gênero, calculado pela receita dividida pelo orçamento. Cada violino representa um gênero, e sua largura indica onde os retornos estão mais concentrados. A linha tracejada marca 1×, quando a receita iguala o orçamento. A cor laranja destaca Faroeste, Documentário e História, que apresentam os maiores percentuais de filmes abaixo de 1× (30%). Foram considerados apenas filmes com retorno calculável e gêneros com pelo menos 30 filmes.\n\nTerror e Família apresentam os menores percentuais, com 18%, uma diferença de 12 pontos percentuais em relação aos maiores. Além disso, Documentário apresenta uma cauda longa à direita, ultrapassando 100× de retorno, enquanto História também apresenta retornos bastante variados, desde valores inferiores a 0,1× até acima de 10×. Isso indica que, mesmo dentro de um gênero, os resultados podem variar bastante, dificultando sua previsibilidade para o estúdio. Utilizamos a escala logarítmica para visualizar retornos de magnitudes diferentes. Esses resultados indicam associações, não relações de causa e efeito, e os valores extremos podem representar poucos filmes.'
+        "A largura de cada violino mostra onde os retornos do gênero se concentram, em escala logarítmica. "
+        "A linha tracejada marca 1×, quando a receita iguala o orçamento. Entre os gêneros com pelo menos 30 filmes "
+        "com retorno calculável, Faroeste, Documentário e História lideram a parcela abaixo de 1×, com cerca de 30% "
+        "cada. Em Terror e Família, essa parcela fica perto de 18%.\n\n"
+        "Há bastante variação dentro dos gêneros. Documentário passa de 100× na cauda superior, e História tem "
+        "filmes abaixo de 0,1× e acima de 10×. Em Documentário, só 37 dos 110 filmes têm retorno calculável. "
+        "Desses 37, 11 arrecadaram menos do que o orçamento. A diferença de cobertura entre os gêneros limita "
+        "a comparação dessas parcelas. No dashboard o eixo começa em 0,1× e omite 3,2% dos filmes; o gráfico do "
+        "notebook mostra também a faixa abaixo disso. Escolhemos o violino porque ele permite observar a distribuição "
+        "dos retornos, não apenas um valor médio."
     ),
     "p2_explanatorio": (
         'As barras agrupadas permitem comparar a mediana do retorno de cada gênero nas diferentes faixas de orçamento. Em aventura, o retorno mediano foi de 3,44 vezes o orçamento nos filmes de até US$ 20 milhões e caiu para cerca de 1,9 vez na faixa acima de US$ 50 milhões até US$ 100 milhões. Na faixa acima de US$ 20 milhões até US$ 50 milhões, comédia apresentou retorno mediano de 2,21 vezes o orçamento. Usei a mediana porque os retornos extremos poderiam distorcer a média.'
@@ -47,9 +56,9 @@ RESPOSTA_CURTA = (
 # Escrito pelo autor do gráfico. Vazio = o dashboard usa um título descritivo neutro.
 TITULOS_ACHADO = {
     "p1_exploratorio": "",
-    "p2_exploratorio": "",
+    "p2_exploratorio": "Aventura e Ação concentram orçamentos mais altos que Comédia e Drama",
     "p3_exploratorio": "",
-    "p4_exploratorio": "",
-    "p2_explanatorio": "",
+    "p4_exploratorio": "Cerca de 30% dos filmes de Faroeste, Documentário e História arrecadam abaixo do orçamento",
+    "p2_explanatorio": "Nos quatro gêneros, o retorno mediano é menor nas faixas de US$ 20 a 100 milhões",
     "p3_explanatorio": "",
 }

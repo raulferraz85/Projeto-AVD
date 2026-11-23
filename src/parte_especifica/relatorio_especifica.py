@@ -10,6 +10,7 @@ O que entra aqui:
 - marcações [PREENCHER — ...] em destaque onde ainda falta texto do grupo. Para preencher, troque a
   string do PREENCHER correspondente em TEXTOS (abaixo) pelo texto; o destaque some sozinho.
 """
+
 # [IA] Claude Code – estrutura da seção da Parte Específica no relatório (texto analítico é do grupo)
 from __future__ import annotations
 
@@ -53,9 +54,26 @@ O filme barato é uma aposta de alto risco e alto potencial: um em cada quatro n
     "estrutural": 'A base tem 4.803 filmes e 20 colunas, divididas em quantitativas (como `budget`, `revenue` e `runtime`), qualitativas (como `genres`, `original_language` e `status`), um identificador (`id`) e textos livres que não entram na análise. Cinco colunas vinham como texto JSON (`genres`, `keywords`, `production_companies`, `production_countries` e `spoken_languages`) e foram convertidas em listas. Isso revelou um ponto central para a pergunta: os gêneros não são exclusivos, já que cada filme tem em média 2,5 gêneros. Por isso, na análise por gênero, o mesmo filme é contado em todos os seus gêneros, e os grupos se sobrepõem. Não há linhas nem ids duplicados. Os 3 títulos repetidos (*Batman*, *The Host* e *Out of the Blue*) correspondem a filmes diferentes, com datas distintas, e foram mantidos. Os 8 filmes que ainda não tinham sido lançados ("Rumored" ou "Post Production") ficam fora do cálculo do retorno, porque não podem ter receita real. Por fim, não encontramos anos fora do intervalo esperado, notas fora da escala de 0 a 10 nem valores negativos, o que indica que os problemas da base estão nos dados faltantes e nos valores implausíveis, tratados nas seções 7.3 e 7.4, e não em erros de formato.',
     "faltantes": 'O principal problema de ausência está em `budget` e `revenue`, em que o zero significa "não informado": apenas 67% dos filmes têm os dois valores válidos. A ausência não é aleatória. Os filmes sem dado financeiro têm muito menos votos (mediana de 38, contra 471 nos filmes com dado) e são mais frequentemente de idioma original diferente do inglês (57% de ausência, contra 31% nos filmes em inglês). Como a ausência é explicada por variáveis observadas, classificamos o mecanismo como MAR. Também não descartamos um componente MNAR: filmes que fracassaram podem deixar de divulgar a bilheteria justamente porque ela foi baixa. Decidimos não imputar esses valores, porque estimar orçamento ou receita seria inventar a própria variável que a pergunta de pesquisa quer analisar. Os filmes sem dado financeiro continuam na base, mas ficam fora do cálculo do retorno. A consequência é que a análise trabalha com uma amostra enviesada, em que faltam principalmente os filmes pequenos, pouco conhecidos e não falados em inglês. O gráfico de cobertura financeira por gênero (Figura 19, seção 7.8) mostra o mesmo viés por gênero: Aventura e Ação têm cerca de 80% de cobertura, enquanto Drama tem 62% e Documentário 34%. Por isso, as conclusões sobre retorno valem para filmes conhecidos, majoritariamente de língua inglesa, e não para o cinema como um todo. Se o componente MNAR existir, o retorno observado também pode estar superestimado.',
     "outliers": 'Orçamento e receita são muito assimétricos, com muitos filmes pequenos e poucos gigantes. Por isso, a regra do IQR marca 6,5% dos orçamentos e 8,9% das receitas como outliers. Esses valores fazem parte da natureza das variáveis e não indicam erro, então em cada caso avaliamos se o valor é possível na vida real. Os 44 filmes com orçamento ou receita entre US$ 1 e 999 foram considerados erros, provavelmente valores cadastrados na unidade errada (em milhões em vez de dólares), e esses valores viraram NaN. A única exceção conhecida é *Tarnation*, cujo orçamento de US$ 218 é real; aceitamos excluí-lo junto para manter uma regra simples e reprodutível. O efeito desse tratamento é grande: apenas 18 desses filmes estavam na base de retorno, mas bastavam para levar o retorno máximo a 8,5 milhões de vezes o orçamento e a média a cerca de 2.955. Depois do tratamento, o máximo cai para cerca de 12.900 vezes e a média para 11,1, enquanto a mediana fica em 2,3 nos dois casos. Os blockbusters, como *Avatar*, e os retornos extremos legítimos, como *Atividade Paranormal*, foram mantidos, porque são reais e fazem parte da resposta à pergunta. Como o retorno continua muito assimétrico mesmo depois do tratamento, com a média quase cinco vezes maior que a mediana, a análise usa a **mediana** como medida central e **escala log** nos gráficos de dispersão.',
-    "distribucional": "PREENCHER — Pessoa 2: resumo do pilar distribucional (seções 5.1 a 5.5 do eda.ipynb) em um ou dois parágrafos.",
+    "distribucional": (
+        "O orçamento mediano é de US$ 23,3 milhões e três quartos dos orçamentos informados ficam em até "
+        "US$ 50 milhões. A receita tem mediana de US$ 52,3 milhões e média de US$ 117,8 milhões, puxada pelos "
+        "filmes de maior bilheteria. Essa diferença também aparece no retorno: a mediana é de 2,30×, a média "
+        "é de 11,14× e metade dos valores fica entre 1,03× e 4,42×. A duração é mais concentrada, com metade "
+        "dos filmes entre 94 e 118 minutos. Há orçamento válido para 77,8% dos filmes e receita válida para 69,8%. "
+        "Comparar as medianas dessas duas colunas não diz se os filmes mais caros rendem mais por dólar investido. Para responder "
+        "à pergunta, comparamos a mediana do retorno por faixa de orçamento e gênero entre os 3.210 filmes "
+        "com os dois valores válidos.\n\n"
+        "Mais de 72% dos filmes se concentram nas décadas de 2000 e 2010 (3.494 de 4.802). Setembro tem o "
+        "maior número de lançamentos (588), e fevereiro e novembro têm 326 cada. A base é majoritariamente "
+        "de idioma original inglês (93,8%) e os EUA aparecem como país produtor em 82,4% dos filmes, o que "
+        "limita a leitura para outros mercados e épocas. Nas listas, 1.490 filmes têm dois gêneros e 1.525 "
+        "têm três, então as comparações por gênero incluem filmes em comum. Em 411 filmes não há palavras-chave "
+        "registradas. As sinopses têm mediana de 284 caracteres e faltam em apenas três filmes. Já a frase "
+        "promocional falta em 843, e a coluna descartada `homepage` estava vazia em 3.091 dos 4.803 registros "
+        "originais. Cada um dos 4.802 IDs aparece uma vez, embora haja títulos repetidos."
+    ),
     "relacional": "PREENCHER — Pessoa 3: resumo do pilar relacional (seção 6.1 do eda.ipynb) em um parágrafo.",
-    "p4_exploratorio": "PREENCHER — Pessoa 4: gráfico exploratório e nota analítica (ainda não feitos).",
+    "p4_exploratorio": f"**Nota analítica (Pessoa 2).**\n\n{NOTAS['p4_exploratorio']}",
     "dashboard": 'O dashboard permite que o gestor escolha o próprio recorte de gênero e faixa de orçamento e compare o retorno mediano e a chance de não recuperar o orçamento desse recorte com os da base inteira, sem precisar abrir o notebook. Ele também mostra a cobertura financeira de cada gênero, para que o gestor saiba quanto confiar nos números antes de usá-los numa decisão.',
 }
 
@@ -68,6 +86,7 @@ FIGURAS_NOTEBOOK = {
     "p1_exploratorio": "% de filmes com retorno calculável por",
     "p2_exploratorio": "apoio com pandas e implementação da dispersão",
     "p3_exploratorio": "Densidade conjunta de orçamento e retorno",
+    "p4_exploratorio": "violino do retorno por gênero",
     "p2_explanatorio": "agregação em pandas e barras agrupadas",
     "p3_explanatorio": "Associação monotônica por gênero",
 }
@@ -232,13 +251,14 @@ def montar(P, H1, H2, CORPO, LEG, img, tabela) -> list:
     nota_grafico("p2_exploratorio", "Pessoa 2")
     figura("p3_exploratorio", "Figura 21 — Concentração de filmes por orçamento e retorno em seis gêneros (Pessoa 3).")
     nota_grafico("p3_exploratorio", "Pessoa 3")
+    figura("p4_exploratorio", "Figura 22 — Distribuição do retorno por gênero e parcela abaixo de 1× (Pessoa 2).")
     texto("p4_exploratorio")
 
     # ---------------------------------------------------------------------------------------
     s += [P("7.9 Gráficos explanatórios", H2)]
-    figura("p2_explanatorio", "Figura 22 — Mediana do retorno por faixa de orçamento e gênero (Pessoa 2).")
+    figura("p2_explanatorio", "Figura 23 — Mediana do retorno por faixa de orçamento e gênero (Pessoa 2).")
     nota_grafico("p2_explanatorio", "Pessoa 2")
-    figura("p3_explanatorio", "Figura 23 — Correlação de Spearman entre orçamento e retorno por gênero, IC bootstrap de 95% (Pessoa 3).")
+    figura("p3_explanatorio", "Figura 24 — Correlação de Spearman entre orçamento e retorno por gênero, IC bootstrap de 95% (Pessoa 3).")
     nota_grafico("p3_explanatorio", "Pessoa 3")
 
     # ---------------------------------------------------------------------------------------

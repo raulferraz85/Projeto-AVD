@@ -16,7 +16,6 @@ Entregáveis: este repositório, o `relatorio.pdf` e o dashboard em Streamlit.
 | Pessoa 1 | Julia Maria Santos Teixeira | Dados e tratamento, identidade visual, fechamento (relatório, slides, README) |
 | Pessoa 2 | Raul Vitor Ferraz Silva | EDA distribucional, gráficos exploratório e explanatório, resposta à pergunta |
 | Pessoa 3 | Lucas Rodrigues Campos | EDA relacional, gráficos exploratório e explanatório, storytelling |
-| Pessoa 4 | _(preencher)_ | Estrutura do dashboard, página da Parte Comum, gráfico exploratório |
 
 ## Como rodar
 
@@ -116,7 +115,7 @@ As escolhas ficam no dicionário `DECISOES`, e as justificativas, nas seções 2
 | Cobertura financeira por gênero | Exploratório | Pessoa 1 | pronto |
 | Dispersão orçamento × retorno por gênero | Exploratório | Pessoa 2 | pronto |
 | Concentração de orçamento e retorno por gênero | Exploratório | Pessoa 3 | pronto |
-| _(a definir)_ | Exploratório | Pessoa 4 | pendente |
+| Violino: distribuição do retorno por gênero | Exploratório | Pessoa 2 | pronto |
 | Mediana do retorno por faixa de orçamento e gênero | Explanatório | Pessoa 2 | pronto |
 | Correlação de Spearman por gênero (IC bootstrap 95 %) | Explanatório | Pessoa 3 | pronto |
 
@@ -171,30 +170,30 @@ A declaração assinada por todos fica em `docs/DECLARACAO_IA.pdf`.
 
 ## Matriz de contribuição
 
-| Atividade | Pessoa 1 | Pessoa 2 | Pessoa 3 | Pessoa 4 |
-|---|---|---|---|---|
-| Parte Comum — EDA | | | | |
-| Parte Comum — K-Means e métricas | | | | |
-| Parte Comum — discussão crítica | | | | |
-| Parte Específica — escolha do dataset e da pergunta | | | | |
-| Parte Específica — EDA estrutural, faltantes e outliers | | | | |
-| Parte Específica — EDA distribucional | | | | |
-| Parte Específica — EDA relacional | | | | |
-| Gráficos exploratórios e notas | | | | |
-| Gráficos explanatórios e notas | | | | |
-| Storytelling e resposta à pergunta | | | | |
-| Identidade visual | | | | |
-| Dashboard | | | | |
-| Relatório | | | | |
-| Slides e apresentação | | | | |
-| README | | | | |
+| Atividade | Pessoa 1 | Pessoa 2 | Pessoa 3 |
+|---|---|---|---|
+| Parte Comum — EDA | | | |
+| Parte Comum — K-Means e métricas | | | |
+| Parte Comum — discussão crítica | | | |
+| Parte Específica — escolha do dataset e da pergunta | | | |
+| Parte Específica — EDA estrutural, faltantes e outliers | | | |
+| Parte Específica — EDA distribucional | | | |
+| Parte Específica — EDA relacional | | | |
+| Gráficos exploratórios e notas | | | |
+| Gráficos explanatórios e notas | | | |
+| Storytelling e resposta à pergunta | | | |
+| Identidade visual | | | |
+| Dashboard | | | |
+| Relatório | | | |
+| Slides e apresentação | | | |
+| README | | | |
 
 _(preencher com P = principal, A = apoio)_
 
 ## Pendências
 
 - [x] Nomes dos integrantes (aqui e na capa do relatório)
-- [ ] Gráfico exploratório e nota da Pessoa 4
+- [x] Gráfico exploratório e nota do violino (Pessoa 2)
 - [x] Resposta à pergunta (resumo aqui)
 - [ ] Resumo do storytelling aqui
 - [ ] Matriz de contribuição

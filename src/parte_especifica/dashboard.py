@@ -320,11 +320,10 @@ def pagina_exploracao() -> None:
 
     # um gráfico por vez: a página fica curta e só monta o gráfico escolhido
     opcoes = {g["id"]: g["curto"] for g in GRAFICOS if g["tipo"] == "exploratório"}
-    opcoes.setdefault("p4_exploratorio", "Pessoa 4 (pendente)")
     escolhido = st.segmented_control("Gráfico", list(opcoes), format_func=opcoes.get, key="v_exploratorio",
                                      required=True, default=_salvo("v_exploratorio", next(iter(opcoes))),
                                      on_change=_salvar, args=("v_exploratorio",), label_visibility="collapsed")
-    mostrar(escolhido, f, autor_pendente="Exploratório · Pessoa 4")
+    mostrar(escolhido, f, autor_pendente="Exploratório · Pessoa 2")
 
 
 def pagina_explicacao() -> None:
