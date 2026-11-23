@@ -310,6 +310,66 @@ def p3_explanatorio_spearman(df: pd.DataFrame, modo: str | None = None, generos=
 
 
 # ==========================================================================================
+# Pessoa 4 — exploratório: distribuição do retorno por gênero (violino) e parcela abaixo de 1×
+# ==========================================================================================
+# [IA] Claude Code – implementação em plotly do violino escolhido pela Pessoa 4 (tipo de gráfico, variáveis e objetivo são do grupo)
+def p4_tabela_violino(df: pd.DataFrame, generos=None, min_filmes: int = MIN_FILMES_GENERO) -> pd.DataFrame:
+    """Filmes com retorno e % com retorno < 1× (receita menor que o orçamento) por gênero, do maior % ao menor."""
+    base = explodir(df.loc[df["retorno"].gt(0), ["id", "retorno", "genres"]], "genres").dropna(subset=["genres"])
+    base = base.drop_duplicates(["id", "genres"])
+    if generos is not None:
+        base = base.loc[base["genres"].isin(generos)]
+    tab = base.groupby("genres")["retorno"].agg(filmes="size", pct_abaixo=lambda r: r.lt(1).mean(), mediana="median")
+    tab = tab.loc[tab["filmes"].ge(max(min_filmes, 1))].reset_index().rename(columns={"genres": "genero"})
+    tab["gênero"] = tab["genero"].map(lambda g: GENEROS_PT.get(g, g))
+    return tab.sort_values("pct_abaixo", ascending=False).reset_index(drop=True)
+
+
+def p4_exploratorio_violino(df: pd.DataFrame, modo: str | None = None, generos=None,
+                            min_filmes: int = MIN_FILMES_GENERO) -> go.Figure:
+    modo = modo or modo_atual()
+    c = CORES[modo]
+    min_filmes = max(min_filmes, MIN_FILMES_GENERO)
+    tab = p4_tabela_violino(df, generos, min_filmes)
+    if tab.empty:
+        raise SemDados
+    base = explodir(df.loc[df["retorno"].gt(0), ["id", "retorno", "genres"]], "genres").dropna(subset=["genres"])
+    base = base.drop_duplicates(["id", "genres"])
+    fig = go.Figure()
+    # o violino estima a densidade em escala linear; como o retorno é muito assimétrico, desenhamos log10(retorno)
+    # e trocamos as marcas do eixo por valores em ×
+    for k, r in tab.iterrows():
+        d = base.loc[base["genres"].eq(r["genero"]), "retorno"]
+        destaque = k < 3  # os 3 gêneros com maior % de filmes abaixo de 1×
+        cor = c["prejuizo"] if destaque else c["contexto"]
+        fig.add_trace(go.Violin(
+            x=np.log10(d), y=[f"{r['gênero']} ({fmt_pct(r['pct_abaixo'], 0)})"] * len(d), orientation="h",
+            name=r["gênero"], showlegend=False, spanmode="hard", width=0.9, points=False,
+            line=dict(color=cor, width=1.2), fillcolor=cor, opacity=0.75 if destaque else 0.6,
+            box=dict(visible=True, width=0.25, fillcolor=c["cartao"], line=dict(color=c["texto"], width=1)),
+            meanline=dict(visible=False),
+            hovertemplate=(f"<b>{r['gênero']}</b><br>filmes: {_br(r['filmes'], 0)}<br>"
+                           f"abaixo de 1×: {fmt_pct(r['pct_abaixo'], 1)}<br>"
+                           f"retorno mediano: {fmt_mult(r['mediana'])}<extra></extra>"),
+        ))
+    fig.add_vline(x=0, line=dict(dash="dash", color=c["texto_suave"], width=1.2))
+    fig.add_annotation(x=0, y=1, yref="paper", yanchor="bottom", xanchor="left", xshift=4, showarrow=False,
+                       text="empate (1×)", font=dict(family=FONTE_TEXTO, size=11, color=c["texto_suave"]))
+    valores = [0.1, 0.5, 1, 2, 5, 10, 100, 1000]
+    aplicar_estilo(fig, "Distribuição do retorno por gênero",
+                   f"Violino do retorno (receita ÷ orçamento, escala log) · entre parênteses, % de filmes abaixo de 1× · "
+                   f"gêneros com ao menos {min_filmes} filmes",
+                   modo=modo, altura=max(300, min(760, 170 + 36 * len(tab))))
+    fig.update_xaxes(title_text="Retorno (receita ÷ orçamento, escala logarítmica)", tickvals=list(np.log10(valores)),
+                     ticktext=[fmt_mult(v, 0 if v >= 1 else (1 if v >= 0.1 else 2)) for v in valores],
+                     range=[np.log10(0.1), np.log10(2000)])
+    fig.update_yaxes(showgrid=False, autorange="reversed", tickfont=dict(family=FONTE_TEXTO, size=12, color=c["texto"]),
+                     title_text="Gênero (% abaixo de 1×)")
+    fig.update_layout(violingap=0.15, separators=",.")
+    return fig
+
+
+# ==========================================================================================
 # Catálogo (ordem de exibição no dashboard)
 # ==========================================================================================
 GRAFICOS = [
@@ -320,6 +380,8 @@ GRAFICOS = [
      "secao": "Orçamento e retorno de cada filme, em quatro gêneros", "curto": "Dispersão por gênero"},
     {"id": "p3_exploratorio", "tipo": "exploratório", "autor": "Pessoa 3", "funcao": p3_exploratorio_densidade,
      "secao": "Onde os filmes se concentram em orçamento e retorno, em seis gêneros", "curto": "Concentração por gênero"},
+    {"id": "p4_exploratorio", "tipo": "exploratório", "autor": "Pessoa 4", "funcao": p4_exploratorio_violino,
+     "secao": "Distribuição do retorno por gênero e parcela de filmes abaixo de 1×", "curto": "Violino por gênero"},
     {"id": "p2_explanatorio", "tipo": "explanatório", "autor": "Pessoa 2", "funcao": p2_explanatorio_faixas,
      "secao": "Retorno mediano por faixa de orçamento e gênero", "curto": "Retorno por faixa"},
     {"id": "p3_explanatorio", "tipo": "explanatório", "autor": "Pessoa 3", "funcao": p3_explanatorio_spearman,
