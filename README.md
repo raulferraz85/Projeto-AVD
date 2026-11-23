@@ -148,7 +148,9 @@ _(resumo pendente — o texto completo da Pessoa 3 está no `eda.ipynb`, seção
 | Explicação | gráficos explanatórios, storytelling e resposta completa |
 | Década a década | animação do percurso das medianas por década, com troca de métrica (retorno, lucro bruto, receita) e de escala (log, linear) |
 | Dados e tratamento | faltantes, valores implausíveis, decisões de tratamento e a base tratada |
-| Parte Comum | resultados do K-Means no Wine Quality |
+| Parte Comum | resultados do K-Means no Wine Quality, com as passadas 1 e 2 uma por vez ou lado a lado (PCA, classe × cluster, matriz de confusão, perfil dos centroides) |
+
+O botão **Baixar relatório (PDF)**, na barra lateral de todas as páginas e no fim da página Parte Comum, baixa o `relatorio.pdf`.
 
 **Filtros:** a barra lateral das páginas Exploração, Explicação, Década a década e Dados filtra por gênero, faixa de orçamento,
 ano de lançamento e mínimo de filmes por gênero. Os cards de indicadores comparam o recorte com a base inteira, e a página avisa

@@ -62,3 +62,12 @@ TITULOS_ACHADO = {
     "p2_explanatorio": "Nos quatro gêneros, o retorno mediano é menor nas faixas de US$ 20 a 100 milhões",
     "p3_explanatorio": "",
 }
+
+# Resumo da discussão crítica da Parte Comum (Wine Quality), mostrado na página Wine Quality do dashboard.
+# Texto do grupo (Pessoa 2).
+DISCUSSAO_PARTE_COMUM = (
+    "A primeira passada (k = 4) apresentou grupos mais bem separados, enquanto a segunda (k = 7) teve uma "
+    "concordância ligeiramente maior com as notas reais. Porém, ambas ficaram próximas do baseline de 43,7%, "
+    "mostrando que o K-Means identificou principalmente diferenças físico-químicas entre os vinhos, sem conseguir "
+    "recuperar satisfatoriamente suas notas de qualidade."
+)

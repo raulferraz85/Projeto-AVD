@@ -26,7 +26,7 @@ import streamlit as st
 from dados import DECISOES, RAIZ, carregar_filmes, tratar
 from estilo import GENEROS_PT, card, fmt_mult, fmt_pct, fmt_usd, _br, grafico, injetar_css, nota, usar_tema
 from graficos import ESCALAS, GRAFICOS, METRICAS, MIN_FILMES_DECADA, MIN_FILMES_GENERO, SemDados, animacao_decadas
-from notas import NOTAS, RESPOSTA_CURTA, RESPOSTA_PERGUNTA, STORYTELLING_P3, TITULOS_ACHADO
+from notas import DISCUSSAO_PARTE_COMUM, NOTAS, RESPOSTA_CURTA, RESPOSTA_PERGUNTA, STORYTELLING_P3, TITULOS_ACHADO
 
 PERGUNTA = "Filmes com orçamento maior têm retorno (receita ÷ orçamento) maior, ou isso varia por gênero?"
 PUBLICO = "Gestor de estúdio ou produtora"
@@ -486,16 +486,56 @@ def pagina_parte_comum() -> None:
                  column_config={c: st.column_config.NumberColumn(format="%.3f")
                                 for c in ["acurácia", "baseline", "ARI", "NMI", "silhouette"]})
 
-    # figuras em abas, cada uma na largura toda (lado a lado ficavam pequenas demais para ler)
-    figuras = {
-        "Cotovelo": ("kmeans/passada1_cotovelo.png", "Escolha de k pela regra do cotovelo"),
-        "PCA": ("kmeans/passada2_pca.png", "Clusters da passada 2 projetados nos 2 primeiros componentes"),
-        "Classe × cluster": ("kmeans/passada2_matriz_retangular.png", "Classe real × cluster (passada 2)"),
+    st.subheader("Discussão")
+    nota(DISCUSSAO_PARTE_COMUM)
+    st.caption("Discussão crítica completa na seção 6 do relatório (botão no fim da página).")
+
+    # [IA] Claude Code – comparação entre as passadas (uma por vez ou lado a lado) e download do relatório
+    st.subheader("Comparar as passadas")
+    passadas = {"p1": f"Passada 1 (k = {p1['k']}, cotovelo)", "p2": f"Passada 2 (k = {p2['k']}, nº de classes)",
+                "ambas": "Lado a lado"}
+    escolha = st.segmented_control("Passada", list(passadas), format_func=passadas.get, key="v_passada",
+                                   required=True, default=_salvo("v_passada", "ambas"),
+                                   on_change=_salvar, args=("v_passada",), label_visibility="collapsed")
+    st.caption("“Lado a lado” facilita a comparação; para ler os detalhes, veja uma passada por vez.")
+
+    # figuras que existem para as duas passadas: (arquivo com {p} = 1 ou 2, legenda)
+    por_passada = {
+        "PCA": ("kmeans/passada{p}_pca.png", "Clusters projetados nos 2 primeiros componentes"),
+        "Classe × cluster": ("kmeans/passada{p}_matriz_retangular.png", "Classe real × cluster"),
+        "Matriz de confusão": ("kmeans/passada{p}_matriz_confusao.png", "Classe real × classe mapeada (maioria do cluster)"),
+        "Perfil dos centroides": ("kmeans/passada{p}_perfil_centroides.png", "Perfil químico de cada cluster (z-score)"),
+    }
+    unicas = {
+        "Cotovelo": ("kmeans/passada1_cotovelo.png", "Escolha de k pela regra do cotovelo (passada 1)"),
         "Notas vizinhas": ("granularidade/efeito_vizinhas_heatmap.png", "Diferença entre notas vizinhas (d de Cohen)"),
     }
-    for aba, (arquivo, legenda) in zip(st.tabs(list(figuras)), figuras.values()):
+    abas = st.tabs(list(por_passada) + list(unicas))
+    for aba, (arquivo, legenda) in zip(abas, por_passada.values()):
+        with aba:
+            if escolha == "ambas":
+                for col, n in zip(st.columns(2), (1, 2)):
+                    with col:
+                        _imagem(OUT_COMUM / arquivo.format(p=n), f"{legenda} · passada {n}")
+            else:
+                n = 1 if escolha == "p1" else 2
+                _imagem(OUT_COMUM / arquivo.format(p=n), f"{legenda} · passada {n}")
+    for aba, (arquivo, legenda) in zip(abas[len(por_passada):], unicas.values()):
         with aba:
             _imagem(OUT_COMUM / arquivo, legenda)
+
+    st.subheader("Relatório completo")
+    botao_relatorio()
+
+
+def botao_relatorio() -> None:
+    """Botão para baixar o relatorio.pdf (Parte Comum + Parte Específica) direto do dashboard."""
+    pdf = RAIZ / "relatorio.pdf"
+    if pdf.exists():
+        st.download_button("Baixar relatório (PDF)", pdf.read_bytes(), file_name="relatorio.pdf",
+                           mime="application/pdf", icon=":material/download:")
+    else:
+        pendente("relatorio.pdf não encontrado. Rode src/parte_comum/relatorio.py.")
 
 
 # ==========================================================================================
@@ -519,5 +559,6 @@ navegacao.run()
 # tema pelo Python (só pelo menu), então em vez de um botão que não funcionaria fica o caminho até ele.
 with st.sidebar:
     st.divider()
+    botao_relatorio()
     st.caption(f":material/{'dark_mode' if modo == 'escuro' else 'light_mode'}: **Tema {modo}.** "
                "Para trocar: menu **⋮** no canto superior direito → *Settings* → *Theme*.")
