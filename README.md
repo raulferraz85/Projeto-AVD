@@ -174,23 +174,23 @@ A declaração assinada por todos fica em `docs/DECLARACAO_IA.pdf`.
 
 | Atividade | Pessoa 1 | Pessoa 2 | Pessoa 3 |
 |---|---|---|---|
-| Parte Comum — EDA | | | |
-| Parte Comum — K-Means e métricas | | | |
-| Parte Comum — discussão crítica | | | |
-| Parte Específica — escolha do dataset e da pergunta | | | |
-| Parte Específica — EDA estrutural, faltantes e outliers | | | |
-| Parte Específica — EDA distribucional | | | |
-| Parte Específica — EDA relacional | | | |
-| Gráficos exploratórios e notas | | | |
-| Gráficos explanatórios e notas | | | |
-| Storytelling e resposta à pergunta | | | |
-| Identidade visual | | | |
-| Dashboard | | | |
-| Relatório | | | |
-| Slides e apresentação | | | |
-| README | | | |
+| Parte Comum — EDA | A | P | |
+| Parte Comum — K-Means e métricas | | P | |
+| Parte Comum — discussão crítica | | P | |
+| Parte Específica — escolha do dataset e da pergunta | P | A | A |
+| Parte Específica — EDA estrutural, faltantes e outliers | P | | |
+| Parte Específica — EDA distribucional | | P | |
+| Parte Específica — EDA relacional | | | P |
+| Gráficos exploratórios e notas | P | P | P |
+| Gráficos explanatórios e notas | | P | P |
+| Storytelling e resposta à pergunta | A | P | P |
+| Identidade visual | P | | |
+| Dashboard | P | A | |
+| Relatório | P | A | A |
+| Slides e apresentação | P | A | A |
+| README | P | A | |
 
-_(preencher com P = principal, A = apoio)_
+P = principal, A = apoio.
 
 ## Pendências
 
@@ -198,7 +198,7 @@ _(preencher com P = principal, A = apoio)_
 - [x] Gráfico exploratório e nota do violino (Pessoa 2)
 - [x] Resposta à pergunta (resumo aqui)
 - [ ] Resumo do storytelling aqui
-- [ ] Matriz de contribuição
+- [x] Matriz de contribuição
 - [ ] `docs/DECLARACAO_IA.pdf` assinada por todos
 - [ ] `relatorio.pdf`: preencher os trechos marcados **[PREENCHER]** na seção 7 (textos em `TEXTOS`, `src/parte_especifica/relatorio_especifica.py`) e os nomes na capa
 - [ ] Títulos-achado dos gráficos (`TITULOS_ACHADO` em `notas.py`), cada autor o seu
