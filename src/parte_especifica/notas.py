@@ -55,7 +55,7 @@ RESPOSTA_CURTA = (
 # Título de cada gráfico no dashboard, dizendo o ACHADO (ex.: "Filmes caros raramente dão prejuízo").
 # Escrito pelo autor do gráfico. Vazio = o dashboard usa um título descritivo neutro.
 TITULOS_ACHADO = {
-    "p1_exploratorio": "",
+    "p1_exploratorio": "Aventura tem retorno calculável para 84% dos filmes; Drama, para 62%, e Documentário, só 34%",
     "p2_exploratorio": "Aventura e Ação concentram orçamentos mais altos que Comédia e Drama",
     "p3_exploratorio": "",
     "p4_exploratorio": "Cerca de 30% dos filmes de Faroeste, Documentário e História arrecadam abaixo do orçamento",
