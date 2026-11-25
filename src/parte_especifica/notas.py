@@ -57,10 +57,10 @@ RESPOSTA_CURTA = (
 TITULOS_ACHADO = {
     "p1_exploratorio": "Aventura tem retorno calculável para 84% dos filmes; Drama, para 62%, e Documentário, só 34%",
     "p2_exploratorio": "Aventura e Ação concentram orçamentos mais altos que Comédia e Drama",
-    "p3_exploratorio": "",
+    "p3_exploratorio": "A concentração e a dispersão do retorno variam entre os seis gêneros",
     "p4_exploratorio": "Cerca de 30% dos filmes de Faroeste, Documentário e História arrecadam abaixo do orçamento",
     "p2_explanatorio": "Nos quatro gêneros, o retorno mediano é menor nas faixas de US$ 20 a 100 milhões",
-    "p3_explanatorio": "",
+    "p3_explanatorio": "Associação negativa em quatro gêneros; próxima de zero em dois",
 }
 
 # Resumo da discussão crítica da Parte Comum (Wine Quality), mostrado na página Wine Quality do dashboard.

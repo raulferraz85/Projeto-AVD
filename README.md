@@ -135,7 +135,13 @@ Texto completo, com as ressalvas, no fim do `eda.ipynb`, na seção 7.10 do `rel
 
 ### Storytelling
 
-_(resumo pendente — o texto completo da Pessoa 3 está no `eda.ipynb`, seção 6.2, e na página Explicação do dashboard)_
+**Público-alvo:** gestores de estúdio ou produtora, que precisam avaliar como orçamento, gênero e retorno bruto se relacionam ao pensar o portfólio.
+
+**O que a exploração mostrou:** nos gêneros analisados, a associação de Spearman entre orçamento e retorno é negativa em Comédia, Drama, Romance e Suspense; em Ação e Aventura, fica próxima de zero, com intervalos bootstrap que incluem zero. O gráfico exploratório mostra a concentração e a dispersão de filmes por orçamento e retorno em cada gênero. O padrão é descritivo: não demonstra causalidade nem diferença formal entre gêneros, que também compartilham filmes.
+
+**Por que essa mensagem:** orçamentos maiores, por si só, não garantem maior retorno bruto relativo. A relação deve ser lida junto com gênero e dispersão para orientar perguntas sobre o portfólio. Retorno (receita ÷ orçamento) não é lucro nem margem, e o orçamento também aparece no denominador do retorno, o que limita a interpretação da associação.
+
+**Atributos pré-atentivos no gráfico explanatório:** a posição horizontal mostra a associação de Spearman e a linha vertical marca ausência de associação; o segmento horizontal mostra o intervalo bootstrap de 95%; a posição vertical identifica os gêneros; o tamanho dos pontos codifica a quantidade de filmes; e a cor identifica cada gênero conforme a paleta fixa do projeto.
 
 ### Dashboard
 

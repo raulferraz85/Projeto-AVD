@@ -72,7 +72,7 @@ O filme barato é uma aposta de alto risco e alto potencial: um em cada quatro n
         "promocional falta em 843, e a coluna descartada `homepage` estava vazia em 3.091 dos 4.803 registros "
         "originais. Cada um dos 4.802 IDs aparece uma vez, embora haja títulos repetidos."
     ),
-    "relacional": "PREENCHER — Pessoa 3: resumo do pilar relacional (seção 6.1 do eda.ipynb) em um parágrafo.",
+    "relacional": "A análise investiga se o retorno bruto (receita ÷ orçamento) varia com o orçamento e se esse padrão descritivo muda entre gêneros. Considera filmes lançados com orçamento e receita positivos e válidos após o tratamento; como um filme pode pertencer a vários gêneros, ele aparece em cada grupo correspondente e as comparações entre gêneros se sobrepõem. Retorno não é lucro. A exploração conjunta localiza concentrações e dispersões por orçamento e retorno, enquanto a associação de Spearman resume a direção e a intensidade da relação monotônica por gênero, com intervalos bootstrap de 95%. A leitura é descritiva: não demonstra causalidade nem constitui teste formal de diferenças entre gêneros.",
     "p4_exploratorio": f"**Nota analítica (Pessoa 2).**\n\n{NOTAS['p4_exploratorio']}",
     "dashboard": 'O dashboard permite que o gestor escolha o próprio recorte de gênero e faixa de orçamento e compare o retorno mediano e a chance de não recuperar o orçamento desse recorte com os da base inteira, sem precisar abrir o notebook. Ele também mostra a cobertura financeira de cada gênero, para que o gestor saiba quanto confiar nos números antes de usá-los numa decisão.',
 }
