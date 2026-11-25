@@ -121,6 +121,12 @@ def montar() -> list:
           P("O <b>álcool</b> é a variável mais associada à qualidade (ρ = +0,45), seguida de densidade (−0,32), cloretos (−0,30) e acidez volátil (−0,26); nenhuma supera |0,45|. "
             "Há redundância entre variáveis (SO₂ livre × total: 0,72; densidade × álcool: −0,69; açúcar × densidade: 0,55). Além disso, as variáveis separam "
             "<b>tinto de branco</b> muito mais do que separam notas (diferença padronizada de até 1,6 desvio-padrão em SO₂ total; Figura em out/), o que antecipa que o K-Means agrupará por tipo."),
+          P("O <i>scipy</i> não está entre as bibliotecas permitidas pelo enunciado, então implementamos o teste de Kruskal–Wallis usando apenas <i>numpy</i> e <i>pandas</i>. "
+            "Ele foi usado no pilar relacional da EDA para verificar se cada variável muda entre as notas de qualidade dos vinhos. "
+            "A implementação segue a mesma fórmula do <i>scipy.stats.kruskal</i>: os valores viram postos (com média nos empates), calcula-se a estatística H com correção de empates, "
+            "e o p-valor sai da distribuição qui-quadrado com k − 1 graus de liberdade. Comparamos os resultados com os do <i>scipy</i> e eles foram idênticos. "
+            "Escolhemos um teste não paramétrico porque as variáveis não seguem distribuição normal. Essa não normalidade fica evidente na assimetria, na curtose e nos histogramas, "
+            "por isso dispensamos um teste formal de normalidade."),
           ]
 
     ot = csv(E / "outliers_tabela.csv", index_col=0)[["limite_inf_iqr", "limite_sup_iqr", "n_outliers_iqr", "pct_iqr", "n_outliers_z3", "max_|z|"]]
