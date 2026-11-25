@@ -105,8 +105,8 @@ def montar() -> list:
     s += [P("2.2 Pilar distribucional", H2),
           tabela(desc[["mean", "std", "min", "50%", "max", "assimetria", "curtose"]].round(3), fmt="{:.3f}"),
           img(E / "dist_histogramas.png", 16.5, "Figura 1 — Histogramas com KDE das 11 variáveis."),
-          P("Quase todas as variáveis têm cauda longa à direita (cloretos: assimetria 5,4; sulfatos 1,8; acidez fixa 1,7; açúcar residual 1,4) e <b>nenhuma é normal</b> "
-            "(teste de D'Agostino–Pearson, p &lt; 10⁻¹²). As escalas variam em ordens de grandeza (densidade ≈ 0,99; SO₂ total ≈ 116). "
+          P("Quase todas as variáveis têm cauda longa à direita (cloretos: assimetria 5,4; sulfatos 1,8; acidez fixa 1,7; açúcar residual 1,4) e <b>não seguem uma distribuição normal</b>. "
+            "O SO₂ total é simétrico, mas tem dois picos porque mistura tintos (mediana 38) e brancos (mediana 134) (Figura 1). As escalas variam em ordens de grandeza (densidade ≈ 0,99; SO₂ total ≈ 116). "
             "A variável de classe é fortemente desbalanceada: as notas 5 e 6 somam 76,6% dos vinhos, enquanto 3, 8 e 9 têm 30, 193 e 5 vinhos."),
           img(E / "dist_classes.png", 14, "Figura 2 — Distribuição das notas de qualidade (total e por tipo). A nota 9 só existe no vinho branco.")]
 

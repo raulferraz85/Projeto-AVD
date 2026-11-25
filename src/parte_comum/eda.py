@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 
-import estatistica as stats  # substitui scipy.stats (só normaltest e kruskal)
+import estatistica as stats  # substitui scipy.stats.kruskal (scipy não está na lista permitida)
 from common import FEATURES, TARGET, TIPO, carregar_dados, estilo_graficos, pasta_saida, salvar
 
 # ----------------------------------------------------------------------------------------
@@ -51,12 +51,10 @@ def estrutural(df: pd.DataFrame) -> dict:
 
 
 def distribucional(df: pd.DataFrame) -> dict:
-    """Estatísticas descritivas, assimetria, curtose e teste de normalidade por variável."""
+    """Estatísticas descritivas, assimetria e curtose por variável."""
     desc = df[FEATURES].describe().T
     desc["assimetria"] = df[FEATURES].skew()
     desc["curtose"] = df[FEATURES].kurt()
-    # Shapiro-Wilk perde sentido com n grande (rejeita tudo); D'Agostino-Pearson é mais estável
-    desc["p_normalidade"] = [stats.normaltest(df[c])[1] for c in FEATURES]
     freq = df[TARGET].value_counts().sort_index()
     dist_classes = pd.DataFrame({"n": freq, "pct": (100 * freq / freq.sum()).round(2)})
     por_tipo = pd.crosstab(df[TARGET], df[TIPO])
