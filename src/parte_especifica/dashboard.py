@@ -338,7 +338,7 @@ def pagina_explicacao() -> None:
 
     st.subheader("Storytelling para decisão")
     with st.container(border=True):
-        st.markdown(STORYTELLING_P3)
+        st.markdown(STORYTELLING_P3.replace("$", "\\$"))  # "$" sozinho vira fórmula no Markdown
 
     st.subheader("Resposta completa à pergunta", anchor="resposta")
     st.caption(f"{PERGUNTA} Calculada sobre a base inteira, sem os filtros da barra lateral.")
