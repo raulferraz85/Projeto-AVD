@@ -95,6 +95,8 @@ O K-Means agrupa sobretudo por **tipo de vinho** e perfil químico. As notas viz
 **Variáveis centrais:** `budget`, `revenue`, `genres`
 **Público-alvo:** gestor de estúdio ou produtora
 
+**Enquadramento:** O dataset se enquadra em um problema de classificação. A variável-alvo é binária e derivada do retorno (receita ÷ orçamento): o filme recupera o orçamento quando o retorno é igual ou maior que 1× e não recupera quando fica abaixo disso, o que só pode ser definido para os 3.210 filmes com orçamento e receita válidos. O orçamento e o gênero são as variáveis que ajudam a explicar essa classe, e a relação entre eles e o retorno é justamente o que a pergunta de pesquisa investiga: o retorno contínuo mostra se gastar mais rende mais, e a versão binária mostra se gastar mais muda a chance de não recuperar o orçamento. A análise é exploratória e explanatória: descrevemos como o retorno e a classe variam por faixa de orçamento e por gênero, sem treinar um modelo de classificação.
+
 ### Dados e tratamento
 
 A carga e o tratamento estão em `src/parte_especifica/dados.py`. Todo o grupo usa `tratar(carregar_filmes())`.
@@ -173,8 +175,45 @@ Cada gênero tem uma cor fixa em todos os gráficos. Para ver os componentes com
 ## Uso de IA
 
 Células e arquivos de código feitos com apoio de IA estão marcados com `# [IA] <ferramenta> – <finalidade>`.
-A IA ajudou com cálculo, gráficos e estrutura de código. Perguntas, decisões de tratamento, escolha de gráficos, interpretações e notas são do grupo.
+Perguntas, decisões de tratamento, escolha de gráficos, interpretações e notas são do grupo.
 A declaração assinada por todos fica em `docs/DECLARACAO_IA.pdf`.
+
+**Pessoa 1 (Julia) — Claude Code**
+
+As decisões foram todas dela: tratamento dos faltantes e outliers (`DECISOES` em `dados.py`), corte de 30 filmes por gênero,
+gráfico exploratório e nota, identidade visual, organização do dashboard e do relatório. A IA foi usada só para:
+
+- tirar dúvidas;
+- entender erros;
+- apoio com pandas, scikit-learn e Streamlit (trechos marcados com `# [IA]` no `eda.ipynb`, em `dados.py`, `estilo.py`, `graficos.py`, `dashboard.py` e nos scripts do relatório);
+- revisão de ortografia e clareza dos textos.
+
+**Pessoa 2 (Raul) — Codex e Claude Code**
+
+As decisões foram todas dele: a escolha dos três gráficos (dispersão orçamento × retorno por gênero, barras agrupadas
+por faixa de orçamento e violino do retorno por gênero), as variáveis, o objetivo e as faixas de orçamento de cada gráfico,
+as notas analíticas e os títulos-achado, o texto da EDA distribucional, a resposta à pergunta de pesquisa e o resumo da
+discussão da Parte Comum. A IA foi usada só para:
+
+- implementar em código os gráficos especificados por ele (Codex: `eda.ipynb`, seção 5 e "Visualizações selecionadas — Pessoa 2", e o violino; Claude Code: versão em plotly do violino em `graficos.py`);
+- agregações e contagens em pandas (Codex);
+- gráficos da Parte Comum: histogramas, correlações, boxplots, cotovelo, PCA, matrizes de confusão, perfil dos centroides e efeito entre notas vizinhas (Codex, em `eda.py`, `kmeans.py`, `granularidade.py` e `common.py`);
+- comparação entre as passadas do K-Means e botão de download do relatório na página Wine Quality do dashboard (Claude Code);
+- conferir se os números citados nos textos batiam com os dados (percentuais, Spearman, d de Cohen e centroides);
+- revisão de ortografia e clareza dos textos, correção de acentos e troca dos rótulos "Pessoa 4" depois da saída de um integrante (Claude Code);
+- indicar onde pesquisar tipos de gráfico (a escolha foi dele) e explicar por que a escala logarítmica não pode começar em 0.
+
+**Pessoa 3 (Lucas) — Codex e Gemini**
+
+As decisões analíticas, narrativas e de validação foram dele: a pergunta analítica sobre como a associação entre orçamento
+e retorno bruto relativo varia entre gêneros, o recorte nos seis gêneros, a escolha da visão conjunta de
+concentração/dispersão e da correlação de Spearman com intervalo de confiança via bootstrap, os limites interpretativos
+(associação descritiva, sem causalidade nem teste formal de diferença entre gêneros), a mensagem de negócio do storytelling
+e os títulos-achado. A IA foi usada para:
+
+- apoio na implementação e integração da análise relacional e dos gráficos `p3_exploratorio_densidade` e `p3_explanatorio_spearman` no notebook, no dashboard e no relatório (Codex);
+- apoio na redação e no preenchimento de `TITULOS_ACHADO`, do resumo relacional do relatório e do storytelling (Codex, commit `9704b4c`);
+- estruturar prompts para o Codex, revisar a consistência entre resumo relacional, títulos-achado, storytelling e atributos pré-atentivos, e apoiar a conferência final e o fluxo de commit/push (Gemini).
 
 ## Matriz de contribuição
 
@@ -206,6 +245,6 @@ P = principal, A = apoio.
 - [ ] Resumo do storytelling aqui
 - [x] Matriz de contribuição
 - [ ] `docs/DECLARACAO_IA.pdf` assinada por todos
-- [ ] `relatorio.pdf`: preencher os trechos marcados **[PREENCHER]** na seção 7 (textos em `TEXTOS`, `src/parte_especifica/relatorio_especifica.py`) e os nomes na capa
-- [ ] Títulos-achado dos gráficos (`TITULOS_ACHADO` em `notas.py`), cada autor o seu
+- [x] `relatorio.pdf`: preencher os trechos marcados **[PREENCHER]** na seção 7 (textos em `TEXTOS`, `src/parte_especifica/relatorio_especifica.py`) e os nomes na capa
+- [x] Títulos-achado dos gráficos (`TITULOS_ACHADO` em `notas.py`), cada autor o seu
 - [ ] Slides da apresentação (03/12)
