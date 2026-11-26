@@ -73,6 +73,7 @@ O filme barato é uma aposta de alto risco e alto potencial: um em cada quatro n
         "originais. Cada um dos 4.802 IDs aparece uma vez, embora haja títulos repetidos."
     ),
     "relacional": "A análise investiga se o retorno bruto (receita ÷ orçamento) varia com o orçamento e se esse padrão descritivo muda entre gêneros. Considera filmes lançados com orçamento e receita positivos e válidos após o tratamento; como um filme pode pertencer a vários gêneros, ele aparece em cada grupo correspondente e as comparações entre gêneros se sobrepõem. Retorno não é lucro. A exploração conjunta localiza concentrações e dispersões por orçamento e retorno, enquanto a associação de Spearman resume a direção e a intensidade da relação monotônica por gênero, com intervalos bootstrap de 95%. A leitura é descritiva: não demonstra causalidade nem constitui teste formal de diferenças entre gêneros.",
+    "relacional_leitura": 'Para ler a tabela, chamamos de fraca a correlação com valor absoluto abaixo de 0,3, de moderada a que fica entre 0,3 e 0,6 e de forte a que fica a partir de 0,6. Os quatro pares mais fortes medem o tamanho e a visibilidade do filme: popularity e vote_count (0,96) quase coincidem e funcionam como uma mesma medida de público, e filmes com orçamento maior também têm receita maior (0,67), o que não diz nada sobre o retorno. As correlações do retorno com a receita (0,57) e com o orçamento (−0,14) vêm em parte da própria conta: como retorno = receita ÷ orçamento, ele tende a subir com a receita e a cair com o orçamento, o que reforça o cuidado com o orçamento no denominador. O retorno tem associação moderada com o número de votos (0,47), a popularidade (0,43) e a nota (0,33), mas a direção não fica clara: votos e popularidade são medidos depois do lançamento, então é mais provável que o sucesso de bilheteria traga público para o filme no TMDB do que o contrário. Já orçamento e receita quase não se relacionam com a nota (−0,08 e 0,12), e a duração não se relaciona com o retorno (0,04). Para um gestor, isso indica que gastar mais não compra uma nota melhor do público e que a duração do filme não pesa no retorno. Os pares com orçamento, receita ou retorno usam entre cerca de 3.200 e 3.700 filmes, enquanto os demais usam cerca de 4.700; como faltam justamente os filmes pequenos e pouco conhecidos (MAR), essas correlações valem para filmes conhecidos e devem ser comparadas com cuidado com as outras. Todas são associações e não indicam causa.',
     "p4_exploratorio": f"**Nota analítica (Pessoa 2).**\n\n{NOTAS['p4_exploratorio']}",
     "dashboard": 'O dashboard permite que o gestor escolha o próprio recorte de gênero e faixa de orçamento e compare o retorno mediano e a chance de não recuperar o orçamento desse recorte com os da base inteira, sem precisar abrir o notebook. Ele também mostra a cobertura financeira de cada gênero, para que o gestor saiba quanto confiar nos números antes de usá-los numa decisão.',
 }
@@ -142,6 +143,20 @@ def tabela_risco(df: pd.DataFrame) -> pd.DataFrame:
         "não recupera o orçamento": [f"{_n(100 * v)}%" for v in t["nao_recupera"]],
         "fatura mais de 5×": [f"{_n(100 * v)}%" for v in t["mais_5x"]],
     })
+
+
+def tabela_spearman(df: pd.DataFrame) -> pd.DataFrame:
+    """Pares de variáveis quantitativas com o rho de Spearman e o nº de filmes do par (seção 7.7)."""
+    q = df[["budget", "revenue", "retorno", "popularity", "runtime", "vote_average", "vote_count"]]
+    m = q.corr(method="spearman")
+    linhas = []
+    for i, a in enumerate(m.columns):
+        for b in m.columns[i + 1:]:
+            linhas.append({"variável A": a, "variável B": b, "rho": m.loc[a, b], "filmes": q[[a, b]].dropna().shape[0]})
+    t = pd.DataFrame(linhas).sort_values("rho", key=abs, ascending=False)
+    t["rho"] = [_n(v, 2) for v in t["rho"]]
+    t["filmes"] = [_n(v) for v in t["filmes"]]
+    return t
 
 
 def montar(P, H1, H2, CORPO, LEG, img, tabela) -> list:
@@ -242,6 +257,11 @@ def montar(P, H1, H2, CORPO, LEG, img, tabela) -> list:
     texto("distribucional")
     s += [P("7.7 Pilar relacional", H2)]
     texto("relacional")
+    # [IA] Claude Code – tabela de Spearman entre as quantitativas (mesmo cálculo da seção 6.0 do eda.ipynb)
+    s.append(P("<b>Correlação de Spearman entre as variáveis quantitativas</b> (pares ordenados pela força; "
+               "cada par usa os filmes com os dois valores válidos):", CORPO.com(junto_proximo=True)))
+    s.append(tabela(tabela_spearman(df), col0=False, tam=7.6))
+    texto("relacional_leitura")
 
     # ---------------------------------------------------------------------------------------
     s += [P("7.8 Gráficos exploratórios", H2)]

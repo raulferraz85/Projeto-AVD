@@ -222,7 +222,10 @@ class DocumentoPDF:
                 h += self._altura(Paragrafo(bloco.legenda, bloco.estilo_legenda or Estilo()))
             return h + 6
         if isinstance(bloco, Tabela):
-            return min((len(bloco.linhas)) * self._altura_linha_tab(bloco) + 8, 4 * self._altura_linha_tab(bloco) + 8)
+            # mesma regra do _tabela: se cabe numa página, a tabela vai inteira; senão, quebra depois de 4 linhas
+            hl = self._altura_linha_tab(bloco)
+            cheia = len(bloco.linhas) * hl + 8
+            return cheia if cheia < self.y_topo - self.y_base else 4 * hl + 8
         if isinstance(bloco, Espaco):
             return bloco.altura
         return 0.0
@@ -339,8 +342,8 @@ class DocumentoPDF:
                     prox = blocos[k + 1] if k + 1 < len(blocos) else None
                     minimo = 0.0
                     if bloco.estilo.junto_proximo and prox is not None:
-                        # imagem não se divide: o título precisa caber junto com ela inteira
-                        h_prox = self._altura(prox) if isinstance(prox, Imagem) else min(self._altura(prox), 60)
+                        # imagem (e tabela que cabe numa página) não se divide: o título precisa caber junto com ela inteira
+                        h_prox = self._altura(prox) if isinstance(prox, (Imagem, Tabela)) else min(self._altura(prox), 60)
                         minimo = self._altura_paragrafo_completo(bloco) - bloco.estilo.entrelinha + h_prox
                     self._paragrafo(bloco, minimo)
                 elif isinstance(bloco, Imagem):
