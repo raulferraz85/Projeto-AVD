@@ -130,7 +130,7 @@ def p1_exploratorio_cobertura(df: pd.DataFrame, modo: str | None = None, generos
                    modo=modo, altura=max(260, min(620, 152 + 26 * len(tab))))  # base toda = 620 px, altura original
     fig.update_xaxes(title_text="Filmes com retorno calculável (% do gênero)", range=[0, 1.08], tickformat=".0%",
                      tickvals=[0, 0.25, 0.5, 0.75, 1], ticktext=["0%", "25%", "50%", "75%", "100%"])
-    fig.update_yaxes(showgrid=False, tickfont=dict(family=FONTE_TEXTO, size=12, color=c["texto"]))
+    fig.update_yaxes(title_text="Gênero", showgrid=False, tickfont=dict(family=FONTE_TEXTO, size=12, color=c["texto"]))
     fig.update_layout(separators=",.", bargap=0.25)
     return fig
 
@@ -227,17 +227,27 @@ def p3_exploratorio_densidade(df: pd.DataFrame, modo: str | None = None, generos
     titulos = [f"{GENEROS_PT[g]} · n={_br(base['genres'].eq(g).sum(), 0)}" for g in generos]
     linhas, colunas = _grade(len(generos), 3)
     fig = make_subplots(rows=linhas, cols=colunas, shared_xaxes=True, shared_yaxes=True, subplot_titles=titulos,
-                        horizontal_spacing=0.04, vertical_spacing=0.12)
+                        horizontal_spacing=0.09, vertical_spacing=0.12)
     for k, genero in enumerate(generos):
         d = base.loc[base["genres"].eq(genero)]
         cont, _, _ = np.histogram2d(np.log10(d["budget"]), np.log10(d["retorno"]), bins=[x_bins, y_bins])
         z = np.where(cont > 0, np.log10(np.maximum(cont, 1)), np.nan).T  # escala de cor log (como LogNorm), bins vazios sem cor
+        # [IA] Claude Code – barra de cor de cada painel (escala própria), com marcas em nº de filmes
+        linha, coluna = k // colunas + 1, k % colunas + 1
+        painel = fig.get_subplot(linha, coluna)
+        dx, dy = painel.xaxis.domain, painel.yaxis.domain
+        marcas = [v for v in (1, 2, 5, 10, 20, 50, 100) if v <= max(cont.max(), 1)]
         fig.add_trace(go.Heatmap(
-            x=xc, y=yc, z=z, customdata=cont.T, showscale=False, hoverongaps=False,
+            x=xc, y=yc, z=z, customdata=cont.T, showscale=True, hoverongaps=False,
             colorscale=[[0, c["cartao"]], [1, _cor_genero(genero, modo)]], zmin=0,
+            colorbar=dict(x=dx[1] + 0.004, xanchor="left", y=(dy[0] + dy[1]) / 2, yanchor="middle",
+                          len=0.85 * (dy[1] - dy[0]), thickness=8, outlinewidth=0,
+                          tickvals=np.log10(marcas), ticktext=[str(v) for v in marcas],
+                          tickfont=dict(family=FONTE_NUMERO, size=9, color=c["texto_suave"]),
+                          title=dict(text="filmes", side="top", font=dict(family=FONTE_TEXTO, size=10, color=c["texto_suave"]))),
             hovertemplate="orçamento ≈ US$ %{x:.2f} (log10)<br>retorno ≈ %{y:.2f} (log10)<br>filmes: %{customdata:.0f}<extra>"
                           + GENEROS_PT[genero] + "</extra>",
-        ), row=k // colunas + 1, col=k % colunas + 1)
+        ), row=linha, col=coluna)
         fig.add_hline(y=0, line=dict(dash="dash", color=c["texto_suave"], width=1), row=k // colunas + 1, col=k % colunas + 1)
 
     marcas_x = [1e4, 1e6, 1e8]  # poucas marcas para não encostar entre painéis
@@ -245,7 +255,7 @@ def p3_exploratorio_densidade(df: pd.DataFrame, modo: str | None = None, generos
     fig.update_xaxes(tickvals=np.log10(marcas_x), ticktext=[fmt_usd(v) for v in marcas_x], showgrid=False)
     fig.update_yaxes(tickvals=np.log10(marcas_y), ticktext=[f"{_br(v, 0 if v >= 1 else (1 if v >= 0.1 else 2))}×" for v in marcas_y], showgrid=False)
     aplicar_estilo(fig, "Concentração e dispersão de orçamento e retorno por gênero",
-                   "Filmes por região (cor mais intensa = mais filmes; cada painel tem sua própria escala) · linha tracejada = 1×",
+                   "Filmes por região (cor mais intensa = mais filmes; cada painel tem sua própria barra de cor) · linha tracejada = 1×",
                    modo=modo, altura=200 + 210 * linhas)
     _rotulos_titulos_subplot(fig, modo, "Orçamento (US$, escala logarítmica)", "Retorno bruto (receita ÷ orçamento, escala logarítmica)")
     return fig
@@ -300,12 +310,25 @@ def p3_explanatorio_spearman(df: pd.DataFrame, modo: str | None = None, generos=
             hovertemplate=(f"<b>{r['gênero']}</b><br>rho: {_br(r['rho'], 3)}<br>"
                            f"IC 95%: {_br(r['ic_inf'], 3)} a {_br(r['ic_sup'], 3)}<br>filmes: {_br(r['filmes'], 0)}<extra></extra>"),
         ))
+    # [IA] Claude Code – legenda do tamanho do ponto (mesma fórmula do tamanho acima)
+    referencias = sorted({int(tab["filmes"].min()), int(tab["filmes"].max())})
+    if len(referencias) == 2 and referencias[0] < 1000 < referencias[1]:
+        referencias.insert(1, 1000)
+    for i, n in enumerate(referencias):
+        fig.add_trace(go.Scatter(
+            x=[None], y=[None], mode="markers", name=f"{_br(n, 0)} filmes", showlegend=True, hoverinfo="skip",
+            marker=dict(color=c["contexto"], size=8 + 14 * n / max_n),
+            legendgroup="tamanho", legendgrouptitle_text="Tamanho do ponto:" if i == 0 else None,
+        ))
     fig.add_vline(x=0, line=dict(dash="dash", color=c["texto_suave"], width=1.2))
     aplicar_estilo(fig, titulo,
                    "Correlação de Spearman entre orçamento e retorno · segmento = IC bootstrap de 95% · tamanho = nº de filmes",
-                   modo=modo, altura=max(260, 140 + 50 * len(tab)))
+                   modo=modo, altura=max(300, 170 + 50 * len(tab)))
     fig.update_xaxes(title_text="Correlação de Spearman entre orçamento e retorno", range=[-1, 1], zeroline=False)
-    fig.update_yaxes(showgrid=False, tickfont=dict(family=FONTE_TEXTO, size=13, color=c["texto"]))
+    fig.update_yaxes(title_text="Gênero", showgrid=False, tickfont=dict(family=FONTE_TEXTO, size=13, color=c["texto"]))
+    # legenda de tamanho dentro do gráfico, no canto vazio (à direita do zero), em vez de acima do título
+    fig.update_layout(legend=dict(orientation="v", x=0.99, xanchor="right", y=0.03, yanchor="bottom",
+                                  itemsizing="trace", tracegroupgap=0), margin_t=96)
     return fig
 
 
