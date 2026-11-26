@@ -236,15 +236,3 @@ e os títulos-achado. A IA foi usada para:
 | README | P | A | |
 
 P = principal, A = apoio.
-
-## Pendências
-
-- [x] Nomes dos integrantes (aqui e na capa do relatório)
-- [x] Gráfico exploratório e nota do violino (Pessoa 2)
-- [x] Resposta à pergunta (resumo aqui)
-- [ ] Resumo do storytelling aqui
-- [x] Matriz de contribuição
-- [ ] `docs/DECLARACAO_IA.pdf` assinada por todos
-- [x] `relatorio.pdf`: preencher os trechos marcados **[PREENCHER]** na seção 7 (textos em `TEXTOS`, `src/parte_especifica/relatorio_especifica.py`) e os nomes na capa
-- [x] Títulos-achado dos gráficos (`TITULOS_ACHADO` em `notas.py`), cada autor o seu
-- [ ] Slides da apresentação (03/12)
